@@ -1,0 +1,120 @@
+{
+  "interpreterSettings": {
+    "2B62PNUW4": {
+      "id": "2B62PNUW4",
+      "name": "r",
+      "group": "r",
+      "properties": {},
+      "interpreterGroup": [
+        {
+          "class": "io.datalayer.zeppelin.R.RInterpreter",
+          "name": "r"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
+    },
+    "2B3MBZ7R9": {
+      "id": "2B3MBZ7R9",
+      "name": "md",
+      "group": "md",
+      "properties": {},
+      "interpreterGroup": [
+        {
+          "class": "org.apache.zeppelin.markdown.Markdown",
+          "name": "md"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
+    },
+    "2B44ZXSMW": {
+      "id": "2B44ZXSMW",
+      "name": "spark",
+      "group": "spark",
+      "properties": {
+        "spark.cores.max": "",
+        "spark.yarn.jar": "",
+        "master": "local[*]",
+        "zeppelin.spark.maxResult": "1000",
+        "zeppelin.dep.localrepo": "local-repo",
+        "spark.app.name": "Zeppelin",
+        "spark.executor.memory": "512m",
+        "zeppelin.spark.useHiveContext": "true",
+        "zeppelin.spark.concurrentSQL": "false",
+        "spark.home": "",
+        "args": "",
+        "zeppelin.pyspark.python": "python",
+        "zeppelin.dep.additionalRemoteRepository": "spark-packages,http://dl.bintray.com/spark-packages/maven,false;"
+      },
+      "interpreterGroup": [
+        {
+          "class": "org.apache.zeppelin.spark.SparkInterpreter",
+          "name": "spark"
+        },
+        {
+          "class": "org.apache.zeppelin.spark.PySparkInterpreter",
+          "name": "pyspark"
+        },
+        {
+          "class": "org.apache.zeppelin.spark.SparkSqlInterpreter",
+          "name": "sql"
+        },
+        {
+          "class": "org.apache.zeppelin.spark.DepInterpreter",
+          "name": "dep"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
+    },
+    "2B4ZA948M": {
+      "id": "2B4ZA948M",
+      "name": "angular",
+      "group": "angular",
+      "properties": {},
+      "interpreterGroup": [
+        {
+          "class": "org.apache.zeppelin.angular.AngularInterpreter",
+          "name": "angular"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
+    },
+    "2B4XEVGV6": {
+      "id": "2B4XEVGV6",
+      "name": "sh",
+      "group": "sh",
+      "properties": {},
+      "interpreterGroup": [
+        {
+          "class": "org.apache.zeppelin.shell.ShellInterpreter",
+          "name": "sh"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
+    }
+  },
+  "interpreterBindings": {
+    "r": [
+      "2B44ZXSMW",
+      "2B3MBZ7R9",
+      "2B4ZA948M",
+      "2B4XEVGV6",
+      "2B62PNUW4"
+    ],
+    "2A94M5J1Z": [
+      "2B44ZXSMW",
+      "2B3MBZ7R9",
+      "2B4ZA948M",
+      "2B4XEVGV6"
+    ]
+  }
+}
