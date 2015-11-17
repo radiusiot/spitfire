@@ -168,7 +168,7 @@ public class RInterpreter extends Interpreter {
     try {
       varList = con.eval("ls()").asStrings();
       funcList = con.eval("getFunctionNames()").asStrings();
-      String before = buf.substring(0, cursor-1);
+      String before = buf.substring(0, cursor - 1);
       List<String> listFunc = new ArrayList<String>(Arrays.asList(funcList));
       List<String> listVar = new ArrayList<String>(Arrays.asList(varList));
       listVar.remove("getFunctionNames");
@@ -176,7 +176,7 @@ public class RInterpreter extends Interpreter {
         list.addAll(listVar);
       } else {
         String[] tokenize = before.replaceAll("\n", " ").split(" ");
-        String lastWord = tokenize[tokenize.length-1];
+        String lastWord = tokenize[tokenize.length - 1];
         for (String s: listVar) {
           if (s.startsWith(lastWord)) list.add(s);
         }
