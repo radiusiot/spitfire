@@ -1,6 +1,6 @@
 # Apache Zeppelin R Interpreter
 
-This is a interperter for [R](http://cran.r-project.org) code for the [Apache Zeppelin notebook](http://zeppelin.incubator.apache.org).
+This is a interpreter for [R](http://cran.r-project.org) code for the [Apache Zeppelin notebook](http://zeppelin.incubator.apache.org).
 
 [![R Interpreter Screenshot](http://datalayer.io/ext/screenshots/R-interpreter.png)](http://datalayer.io)
 
@@ -31,10 +31,21 @@ mvn install -DskipTests
 ./bin/zeppelin.sh
 ```
 
-# Docker
+Go to [http://localhost:8080](http://localhost:8080).
 
-If you don't want to build, get the Docker image with `docker pull datalayer/zeppelin` (it might take a while to download) and launch with `./zeppelin-docker-start`.
+## Get the image from the Docker Repository
 
+[Datalayer](http://datalayer.io) provides an up-to-date Docker image for [Apache Zeppelin](http://zeppelin.incubator.apache.org), the WEB Notebook for Big Data Science.
+
+In order to get the image, you can run with the appropriate rights:
+
+`docker pull datalayer/zeppelin`
+
+Run the Zeppelin notebook with:
+
+`docker run -it -p 2222:22 -p 8080:8080 -p 4040:4040 datalayer/zeppelin`
+
+and go to [http://localhost:8080](http://localhost:8080).
 
 # Licensed under GNU General Public License
 
