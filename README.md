@@ -10,24 +10,31 @@ Due to GPL2 license of used libraries, this software is not released under ASL2 
 
 # Prerequisite
 
-You need to have R (with Rserve and knitr) available on the host running the notebook.
+You need to have R (with Rserve, ggplot2 knitr) available on the host running the notebook.
 
 For Centos: `yum install R R-devel`
 
 For Ubuntu: `apt-get install r-base r-cran-rserve`
 
-Launch R command and install the needed packages:
+Launch R commands tos install the needed packages:
 
 ```
-install.packages("Rserve")
-install.packages("knitr")
+R CMD BATCH install.packages("Rserve")
+R CMD BATCH install.packages("ggplot2")
+R CMD BATCH install.packages("knitr")
 ```
 
-# Build
+# Build and Run
 
 ```
-mvn install
+mvn install -DskipTests
+./bin/zeppelin.sh
 ```
+
+# Docker
+
+If you don't want to build, get the Docker image with `docker pull datalayer/zeppelin` (it might take a while to download) and launch with `./zeppelin-docker-start`.
+
 
 # Licensed under GNU General Public License
 
