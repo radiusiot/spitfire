@@ -2,6 +2,7 @@
   "paragraphs": [
     {
       "text": "%md\n## Welcome to Zeppelin.\n##### This is a live tutorial, you can run the code yourself. (Shift-Enter to Run)",
+      "dateUpdated": "Nov 19, 2015 2:32:49 PM",
       "config": {
         "colWidth": 12.0,
         "graph": {
@@ -13,7 +14,8 @@
           "groups": [],
           "scatter": {}
         },
-        "editorHide": true
+        "editorHide": true,
+        "editorMode": "ace/mode/markdown"
       },
       "settings": {
         "params": {},
@@ -27,8 +29,8 @@
         "msg": "\u003ch2\u003eWelcome to Zeppelin.\u003c/h2\u003e\n\u003ch5\u003eThis is a live tutorial, you can run the code yourself. (Shift-Enter to Run)\u003c/h5\u003e\n"
       },
       "dateCreated": "Feb 13, 2015 11:16:21 PM",
-      "dateStarted": "Apr 1, 2015 9:11:09 PM",
-      "dateFinished": "Apr 1, 2015 9:11:10 PM",
+      "dateStarted": "Nov 19, 2015 2:32:49 PM",
+      "dateFinished": "Nov 19, 2015 2:32:49 PM",
       "status": "FINISHED",
       "progressUpdateIntervalMs": 500
     },
@@ -333,7 +335,13 @@
   ],
   "name": "Zeppelin Tutorial",
   "id": "2A94M5J1Z",
-  "angularObjects": {},
+  "angularObjects": {
+    "2B4X76R83": [],
+    "2B4QQPHYP": [],
+    "2B71KQE4P": [],
+    "2B5QZNVVN": [],
+    "2B5UQQYCM": []
+  },
   "config": {
     "looknfeel": "default"
   },

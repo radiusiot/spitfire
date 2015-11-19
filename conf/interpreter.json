@@ -1,37 +1,7 @@
 {
   "interpreterSettings": {
-    "2B62PNUW4": {
-      "id": "2B62PNUW4",
-      "name": "r",
-      "group": "r",
-      "properties": {},
-      "interpreterGroup": [
-        {
-          "class": "io.datalayer.zeppelin.R.RInterpreter",
-          "name": "r"
-        }
-      ],
-      "option": {
-        "remote": true
-      }
-    },
-    "2B3MBZ7R9": {
-      "id": "2B3MBZ7R9",
-      "name": "md",
-      "group": "md",
-      "properties": {},
-      "interpreterGroup": [
-        {
-          "class": "org.apache.zeppelin.markdown.Markdown",
-          "name": "md"
-        }
-      ],
-      "option": {
-        "remote": true
-      }
-    },
-    "2B44ZXSMW": {
-      "id": "2B44ZXSMW",
+    "2B4X76R83": {
+      "id": "2B4X76R83",
       "name": "spark",
       "group": "spark",
       "properties": {
@@ -71,8 +41,23 @@
         "remote": true
       }
     },
-    "2B4ZA948M": {
-      "id": "2B4ZA948M",
+    "2B4QQPHYP": {
+      "id": "2B4QQPHYP",
+      "name": "r",
+      "group": "r",
+      "properties": {},
+      "interpreterGroup": [
+        {
+          "class": "io.datalayer.zeppelin.R.RInterpreter",
+          "name": "r"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
+    },
+    "2B71KQE4P": {
+      "id": "2B71KQE4P",
       "name": "angular",
       "group": "angular",
       "properties": {},
@@ -86,8 +71,8 @@
         "remote": true
       }
     },
-    "2B4XEVGV6": {
-      "id": "2B4XEVGV6",
+    "2B5QZNVVN": {
+      "id": "2B5QZNVVN",
       "name": "sh",
       "group": "sh",
       "properties": {},
@@ -100,21 +85,37 @@
       "option": {
         "remote": true
       }
+    },
+    "2B5UQQYCM": {
+      "id": "2B5UQQYCM",
+      "name": "md",
+      "group": "md",
+      "properties": {},
+      "interpreterGroup": [
+        {
+          "class": "org.apache.zeppelin.markdown.Markdown",
+          "name": "md"
+        }
+      ],
+      "option": {
+        "remote": true
+      }
     }
   },
   "interpreterBindings": {
     "r": [
-      "2B44ZXSMW",
-      "2B3MBZ7R9",
-      "2B4ZA948M",
-      "2B4XEVGV6",
-      "2B62PNUW4"
+      "2B4X76R83",
+      "2B4QQPHYP",
+      "2B5UQQYCM",
+      "2B71KQE4P",
+      "2B5QZNVVN"
     ],
     "2A94M5J1Z": [
-      "2B44ZXSMW",
-      "2B3MBZ7R9",
-      "2B4ZA948M",
-      "2B4XEVGV6"
+      "2B4X76R83",
+      "2B4QQPHYP",
+      "2B5UQQYCM",
+      "2B71KQE4P",
+      "2B5QZNVVN"
     ]
   }
 }
