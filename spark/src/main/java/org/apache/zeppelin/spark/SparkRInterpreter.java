@@ -43,8 +43,7 @@ import java.util.Properties;
  * R and SparkR interpreter for Apache Zeppelin.
  */
 public class SparkRInterpreter extends Interpreter {
-  Logger logger = LoggerFactory.getLogger(RInterpreter.class);
-  private int commandTimeOut = 600000;
+  Logger logger = LoggerFactory.getLogger(SparkRInterpreter.class);
   private RConnection con;
   private boolean firstStart = true;
 
@@ -154,7 +153,7 @@ public class SparkRInterpreter extends Interpreter {
   @Override
   public Scheduler getScheduler() {
     return SchedulerFactory.singleton().createOrGetFIFOScheduler(
-        RInterpreter.class.getName() + this.hashCode());
+        SparkRInterpreter.class.getName() + this.hashCode());
   }
 
   @Override

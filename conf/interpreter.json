@@ -41,21 +41,6 @@
         "remote": true
       }
     },
-    "2B4QQPHYP": {
-      "id": "2B4QQPHYP",
-      "name": "r",
-      "group": "r",
-      "properties": {},
-      "interpreterGroup": [
-        {
-          "class": "io.datalayer.zeppelin.R.RInterpreter",
-          "name": "r"
-        }
-      ],
-      "option": {
-        "remote": true
-      }
-    },
     "2B71KQE4P": {
       "id": "2B71KQE4P",
       "name": "angular",
