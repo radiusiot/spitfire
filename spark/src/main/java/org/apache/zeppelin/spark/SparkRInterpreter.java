@@ -23,6 +23,7 @@ import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
+import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
@@ -44,7 +45,7 @@ import java.util.Properties;
  */
 public class SparkRInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(SparkRInterpreter.class);
-  private RConnection con;
+  private static RConnection con;
   private boolean firstStart = true;
 
   static {

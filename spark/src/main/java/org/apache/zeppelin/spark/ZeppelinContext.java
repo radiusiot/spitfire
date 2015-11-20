@@ -647,6 +647,14 @@ public class ZeppelinContext extends HashMap<String, Object> {
     angularUnbind(name, null);
   }
 
+  public void toR(String key, Object value) {
+    throw new RuntimeException("toR is not supported with current Rserve - use rscala version for now.");
+  }
+
+  public Object fromR(String key) {
+    throw new RuntimeException("toR is not supported with current Rserve - use rscala version for now.");
+  }
+
   /**
    * Create angular variable in local registry and bind with front end Angular display system.
    * If variable exists, it'll be overwritten.
