@@ -43,6 +43,20 @@
     <py4j.version>0.8.2.1</py4j.version>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>sonatype.snapshots</id>
+      <name>Sonatype Snapshots Repository</name>
+      <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -72,7 +86,18 @@
       <artifactId>guava</artifactId>
       <version>14.0.1</version>
     </dependency>
-    
+
+    <dependency>
+      <groupId>org.rosuda.REngine</groupId>
+      <artifactId>REngine</artifactId>
+      <version>2.1.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.rosuda.REngine</groupId>
+      <artifactId>Rserve</artifactId>
+      <version>1.8.2-SNAPSHOT</version>
+    </dependency>
+
     <!-- Aether :: maven dependency resolution -->
     <dependency>
       <groupId>org.apache.maven</groupId>

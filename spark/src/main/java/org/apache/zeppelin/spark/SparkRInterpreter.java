@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package io.datalayer.zeppelin.R;
+package org.apache.zeppelin.spark;
 
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
@@ -40,22 +40,19 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * R interpreter for Apache Zeppelin.
- *
- * @author Datalayer (http://datalayer.io)
- *
+ * R and SparkR interpreter for Apache Zeppelin.
  */
-public class RInterpreter extends Interpreter {
+public class SparkRInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(RInterpreter.class);
   private int commandTimeOut = 600000;
   private RConnection con;
   private boolean firstStart = true;
 
   static {
-    Interpreter.register("r", "r", RInterpreter.class.getName());
+    Interpreter.register("r", "spark", SparkRInterpreter.class.getName());
   }
 
-  public RInterpreter(Properties property) {
+  public SparkRInterpreter(Properties property) {
     super(property);
   }
 
