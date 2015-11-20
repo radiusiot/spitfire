@@ -1,20 +1,35 @@
-# Apache Zeppelin R Interpreter
+# Apache Zeppelin R
 
-This is a interpreter for [R](http://cran.r-project.org) code for the [Apache Zeppelin notebook](http://zeppelin.incubator.apache.org).
+This adds [R](http://cran.r-project.org) interpeter to the [Apache Zeppelin notebook](http://zeppelin.incubator.apache.org).
 
-[![R Interpreter Screenshot](http://datalayer.io/ext/screenshots/R-interpreter.png)](http://datalayer.io)
+It support R, SparkR, Scala to R binding, R to Scala binding, cross paragraph variables and R plot (ggplot2...).
 
-It support cross paragraph variables and R plot (ggplot2...).
+## Simple R
 
-Due to GPL2 license of used libraries, this software is not released under ASL2 ([read more](http://www.apache.org/foundation/license-faq.html#GPL)).
+[![Simple R](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/simple-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/simple-r.png)
+
+## Plot
+
+[![Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/plot.png)
+
+## Scala R Binding
+
+[![Scala R Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/scala-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/scala-r.png)
+
+## R Scala Binding
+
+[![R Scala Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/r-scala.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/r-scala.png)
+
+## SparkR
+
+[![SparkR](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/sparkr.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/sparkr.png)
 
 # Prerequisite
 
 You need to have R (with Rserve, ggplot2 knitr) available on the host running the notebook.
 
-For Centos: `yum install R R-devel`
-
-For Ubuntu: `apt-get install r-base r-cran-rserve`
++ For Centos: `yum install R R-devel`
++ For Ubuntu: `apt-get install r-base r-cran-rserve`
 
 Launch R commands tos install the needed packages:
 
@@ -24,26 +39,31 @@ R CMD BATCH install.packages("ggplot2")
 R CMD BATCH install.packages("knitr")
 ```
 
+You also need a compiled version of Spark 1.5.0. [Download](http://archive.apache.org/dist/spark/spark-1.5.0/spark-1.5.0-bin-hadoop2.6.tgz) and untar in your `/opt` folder.
+
 # Build and Run
 
 ```
-mvn install -DskipTests
-./bin/zeppelin.sh
+mvn clean install -Pspark-1.5 -Dspark.version=1.5.0 -Dhadoop.version=2.7.1 -Phadoop-2.6 -Ppyspark -Dmaven.findbugs.enable=false -Drat.skip=true -Dcheckstyle.skip=true -DskipTests -pl '!flink,!ignite,!phoenix,!postgresql,!tajo,!hive,!cassandra,!lens,!kylin'
 ```
 
-Go to [http://localhost:8080](http://localhost:8080).
+```
+SPARK_HOME=/opt/spark-1.5.0-bin-hadoop2.6 ./bin/zeppelin.sh
+```
+
+Go to [http://localhost:8080](http://localhost:8080) and test the .
 
 ## Get the image from the Docker Repository
 
-[Datalayer](http://datalayer.io) provides an up-to-date Docker image for [Apache Zeppelin](http://zeppelin.incubator.apache.org), the WEB Notebook for Big Data Science.
+For your convenience, [Datalayer](http://datalayer.io) provides an up-to-date Docker image for [Apache Zeppelin](http://zeppelin.incubator.apache.org), the WEB Notebook for Big Data Science.
 
 In order to get the image, you can run with the appropriate rights:
 
-`docker pull datalayer/zeppelin`
+`docker pull datalayer/zeppelin-rserve`
 
 Run the Zeppelin notebook with:
 
-`docker run -it -p 2222:22 -p 8080:8080 -p 4040:4040 datalayer/zeppelin`
+`docker run -it -p 2222:22 -p 8080:8080 -p 4040:4040 datalayer/zeppelin-rserve`
 
 and go to [http://localhost:8080](http://localhost:8080).
 
