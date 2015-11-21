@@ -26,12 +26,13 @@ Not available for now.
 
 # Prerequisite
 
-You need to have R (with Rserve, ggplot2 knitr) available on the host running the notebook.
+Launch R commands tos install the needed packages:
+u need R available on the host running the notebook.
 
 + For Centos: `yum install R R-devel`
 + For Ubuntu: `apt-get install r-base r-cran-rserve`
 
-Launch R commands tos install the needed packages:
+Install additional R packages:
 
 ```
 R CMD BATCH install.packages("Rserve")
