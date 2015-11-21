@@ -52,7 +52,7 @@ mvn clean install -Pspark-1.5 -Dspark.version=1.5.0 -Dhadoop.version=2.7.1 -Phad
 SPARK_HOME=/opt/spark-1.5.0-bin-hadoop2.6 ./bin/zeppelin.sh
 ```
 
-Go to [http://localhost:8080](http://localhost:8080) and test the .
+Go to [http://localhost:8080](http://localhost:8080) and test the `R Tutorial` note.
 
 ## Get the image from the Docker Repository
 
