@@ -14,11 +14,11 @@ It support R, SparkR, Scala to R binding, R to Scala binding, cross paragraph va
 
 ## Scala R Binding
 
-[![Scala R Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/scala-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/scala-r.png)
+Not available for now.
 
 ## R Scala Binding
 
-[![R Scala Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/r-scala.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/r-scala.png)
+Not available for now.
 
 ## SparkR
 
