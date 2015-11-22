@@ -64,7 +64,7 @@ Run the Zeppelin notebook with:
 
 `docker run -it -p 2222:22 -p 8080:8080 -p 4040:4040 datalayer/zeppelin-rserve`
 
-and go to [http://localhost:8080](http://localhost:8080).
+and go to [http://localhost:8080](http://localhost:8080) and test the `R Tutorial` note.
 
 # Licensed under GNU General Public License
 
