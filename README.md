@@ -2,7 +2,14 @@
 
 This adds [R](http://cran.r-project.org) interpeter to the [Apache Zeppelin notebook](http://zeppelin.incubator.apache.org).
 
-It support R, SparkR, Scala to R binding, R to Scala binding, cross paragraph variables and R plot (ggplot2...).
+It supports:
+
++ R code.
++ SparkR code.
++ Cross paragraph R variables.
++ R plot (ggplot2...).
+
+For Scala / R binding, please use the [rscala branch](https://github.com/datalayer/zeppelin-R/tree/rscala).
 
 ## Simple R
 
@@ -12,22 +19,13 @@ It support R, SparkR, Scala to R binding, R to Scala binding, cross paragraph va
 
 [![Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/plot.png)
 
-## Scala R Binding
-
-Not available for now.
-
-## R Scala Binding
-
-Not available for now.
-
 ## SparkR
 
 [![SparkR](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/sparkr.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rserve/_Rimg/sparkr.png)
 
 # Prerequisite
 
-Launch R commands tos install the needed packages:
-u need R available on the host running the notebook.
+You need R available on the host running the notebook.
 
 + For Centos: `yum install R R-devel`
 + For Ubuntu: `apt-get install r-base r-cran-rserve`
@@ -40,7 +38,7 @@ R CMD BATCH install.packages("ggplot2")
 R CMD BATCH install.packages("knitr")
 ```
 
-You also need a compiled version of Spark 1.5.0. [Download](http://archive.apache.org/dist/spark/spark-1.5.0/spark-1.5.0-bin-hadoop2.6.tgz) and untar in your `/opt` folder.
+You also need a compiled version of Spark 1.5.0. Download [the binary distribution](http://archive.apache.org/dist/spark/spark-1.5.0/spark-1.5.0-bin-hadoop2.6.tgz) and untar to make it accessible in `/opt/spark` folder.
 
 # Build and Run
 
@@ -49,7 +47,7 @@ mvn clean install -Pspark-1.5 -Dspark.version=1.5.0 -Dhadoop.version=2.7.1 -Phad
 ```
 
 ```
-SPARK_HOME=/opt/spark-1.5.0-bin-hadoop2.6 ./bin/zeppelin.sh
+SPARK_HOME=/opt/spark ./bin/zeppelin.sh
 ```
 
 Go to [http://localhost:8080](http://localhost:8080) and test the `R Tutorial` note.
