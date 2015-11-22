@@ -46,7 +46,6 @@ import java.util.Properties;
 public class SparkRInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(SparkRInterpreter.class);
   private static RConnection con;
-  private boolean firstStart = true;
 
   static {
     Interpreter.register("r", "spark", SparkRInterpreter.class.getName());
@@ -61,6 +60,16 @@ public class SparkRInterpreter extends Interpreter {
     try {
       StartRserve.checkLocalRserve();
       con = new RConnection();
+      try {
+        con.voidEval("print(\"First start will fail...\")");
+      } catch (RserveException e) {
+        logger.warn("No Rserve instance available on first eval!", e);
+      }
+      con.voidEval("Sys.setenv(SPARK_HOME='/opt/spark')");
+      con.voidEval(".libPaths(c(file.path(Sys.getenv('SPARK_HOME'), 'R', 'lib'), .libPaths()))");
+      con.voidEval("library(SparkR)");
+      con.voidEval("sc <- sparkR.init(master='local[*]')");
+      con.voidEval("sqlContext <- sparkRSQL.init(jsc = sc)");
       con.voidEval("library('knitr')");
       con.voidEval("getFunctionNames <- function() {\n" +
           "    loaded <- (.packages())\n" +
@@ -70,6 +79,7 @@ public class SparkRInterpreter extends Interpreter {
       logger.info("Connected to an Rserve instance");
     } catch (RserveException e) {
       logger.error("No Rserve instance available!", e);
+      throw new RuntimeException("No Rserve instance available!", e);
     }
   }
 
@@ -87,12 +97,6 @@ public class SparkRInterpreter extends Interpreter {
 
     if (!con.isConnected()){
       return new InterpreterResult(InterpreterResult.Code.ERROR, "No connection to Rserve");
-    }
-
-    // WORKAROUND: Rserve fails the first time (StartRserve may be involved...).
-    if (firstStart) {
-      firstStart = false;
-      interpret("print(\"First start\")", contextInterpreter);
     }
 
     logger.info("Run R command '" + lines + "'");
@@ -123,6 +127,7 @@ public class SparkRInterpreter extends Interpreter {
           .replaceAll("<pre>", "<p class='text'>").replaceAll("</pre>", "</p>");
 
       return new InterpreterResult(InterpreterResult.Code.SUCCESS, "%html\n" + htmlOut);
+
     } catch (RserveException e) {
       logger.error("Exception while connecting to Rserve", e);
       return new InterpreterResult(InterpreterResult.Code.ERROR, e.getMessage());
@@ -187,7 +192,6 @@ public class SparkRInterpreter extends Interpreter {
     } catch (REXPMismatchException e) {
       logger.warn(e.getMessage());
     }
-
     return list;
   }
 
