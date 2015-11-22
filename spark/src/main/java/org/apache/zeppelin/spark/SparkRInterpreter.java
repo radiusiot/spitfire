@@ -61,21 +61,21 @@ public class SparkRInterpreter extends Interpreter {
       StartRserve.checkLocalRserve();
       con = new RConnection();
       try {
-        con.voidEval("print(\"First start will fail...\")");
+        con.voidEval("print(\"First connection will fail...\")");
       } catch (RserveException e) {
         logger.warn("No Rserve instance available on first eval!", e);
       }
-      con.voidEval("Sys.setenv(SPARK_HOME='/opt/spark')");
-      con.voidEval(".libPaths(c(file.path(Sys.getenv('SPARK_HOME'), 'R', 'lib'), .libPaths()))");
-      con.voidEval("library(SparkR)");
-      con.voidEval("sc <- sparkR.init(master='local[*]')");
-      con.voidEval("sqlContext <- sparkRSQL.init(jsc = sc)");
       con.voidEval("library('knitr')");
       con.voidEval("getFunctionNames <- function() {\n" +
           "    loaded <- (.packages())\n" +
           "    loaded <- paste(\"package:\", loaded, sep =\"\")\n" +
           "    return(sort(unlist(lapply(loaded, lsf.str))))\n" +
           "}");
+      con.voidEval("Sys.setenv(SPARK_HOME='/opt/spark')\n" +
+              ".libPaths(c(file.path(Sys.getenv('SPARK_HOME'), 'R', 'lib'), .libPaths()))\n" +
+              "library(SparkR)\n" +
+              "sc <- sparkR.init(master='local[*]')\n" +
+              "sqlContext <- sparkRSQL.init(jsc = sc)");
       logger.info("Connected to an Rserve instance");
     } catch (RserveException e) {
       logger.error("No Rserve instance available!", e);
