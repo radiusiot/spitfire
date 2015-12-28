@@ -33,9 +33,9 @@ You need R available on the host running the notebook.
 Install additional R packages:
 
 ```
-R CMD BATCH install.packages("Rserve")
-R CMD BATCH install.packages("ggplot2")
-R CMD BATCH install.packages("knitr")
+R -e "install.packages('Rserve', repos = 'http://cran.us.r-project.org')"
+R -e "install.packages('ggplot2', repos = 'http://cran.us.r-project.org')"
+R -e "install.packages('knitr', repos = 'http://cran.us.r-project.org')"
 ```
 
 You also need a compiled version of Spark 1.5.0. Download [the binary distribution](http://archive.apache.org/dist/spark/spark-1.5.0/spark-1.5.0-bin-hadoop2.6.tgz) and untar to make it accessible in `/opt/spark` folder.
@@ -43,7 +43,11 @@ You also need a compiled version of Spark 1.5.0. Download [the binary distributi
 # Build and Run
 
 ```
-mvn clean install -Pspark-1.5 -Dspark.version=1.5.0 -Dhadoop.version=2.7.1 -Phadoop-2.6 -Ppyspark -Dmaven.findbugs.enable=false -Drat.skip=true -Dcheckstyle.skip=true -DskipTests -pl '!flink,!ignite,!phoenix,!postgresql,!tajo,!hive,!cassandra,!lens,!kylin'
+mvn clean install -Pspark-1.5 -Dspark.version=1.5.0 \
+  -Dhadoop.version=2.7.1 -Phadoop-2.6 -Ppyspark \
+  -Dmaven.findbugs.enable=false -Drat.skip=true \
+  -Dcheckstyle.skip=true -DskipTests \
+  -pl '!flink,!ignite,!phoenix,!postgresql,!tajo,!hive,!cassandra,!lens,!kylin'
 ```
 
 ```
