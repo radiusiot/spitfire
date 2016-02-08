@@ -15,7 +15,11 @@ It supports:
 
 [![Simple R](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/simple-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/simple-r.png)
 
-## Plot
+## Interactive Plot
+
+[![Interactive Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot-interactive.png)
+
+## ggplot2 Plot
 
 [![Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)
 
