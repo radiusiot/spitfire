@@ -17,7 +17,7 @@ It supports:
 
 ## Interactive Plot
 
-[![Interactive Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot-interactive.png)
+[![Interactive Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot-interactive.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot-interactive.png)
 
 ## ggplot2 Plot
 
