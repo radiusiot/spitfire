@@ -15,21 +15,23 @@ It supports:
 
 [![Simple R](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/simple-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/simple-r.png)
 
-## Interactive Plot
+## Plots
 
-[![Interactive Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot-interactive.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot-interactive.png)
+[![ggplot2](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/ggplot2.png)
 
-## ggplot2 Plot
+[![rcharts](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/rcharts.png)
 
-[![Plot](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)
+[![maps](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/rcharts-map.png)
+
+[![googlevis](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/plot.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/googlevis.png)
 
 ## Scala R Binding
 
-[![Scala R Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/scala-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/scala-r.png)
+[![Scala R Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/scala-r.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/scala-r-binding.png)
 
-## R Scala Binding
+## R Scala Dataframe Binding
 
-[![R Scala Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/r-scala.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/r-scala.png)
+[![R Scala Binding](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/r-scala.png)](https://raw.githubusercontent.com/datalayer/zeppelin-R/rscala/_Rimg/scala-r-dataframe-binding.png)
 
 ## SparkR
 
