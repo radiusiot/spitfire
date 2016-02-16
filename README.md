@@ -41,7 +41,7 @@ It supports:
 
 You need R available on the host running the notebook.
 
-+ For Centos: `yum install R R-devel`
++ For Centos: `yum install R R-devel libcurl-devel openssl-devel`
 + For Ubuntu: `apt-get install r-base r-cran-rserve`
 
 Install additional R packages:
@@ -50,14 +50,20 @@ Install additional R packages:
 curl https://cran.r-project.org/src/contrib/Archive/rscala/rscala_1.0.6.tar.gz -o /tmp/rscala_1.0.6.tar.gz
 R CMD INSTALL /tmp/rscala_1.0.6.tar.gz
 R -e "install.packages('ggplot2', repos = 'http://cran.us.r-project.org')"
-R -e install.packages('knitr', repos = 'http://cran.us.r-project.org')
+R -e "install.packages('knitr', repos = 'http://cran.us.r-project.org')"
+R -e "install.packages(c('devtools','mplot', 'googleVis'), repos = 'http://cran.us.r-project.org'); require(devtools); install_github('ramnathv/rCharts')"
 ```
 
 You also need a compiled version of Spark 1.5.0. Download [the binary distribution](http://archive.apache.org/dist/spark/spark-1.5.0/spark-1.5.0-bin-hadoop2.6.tgz) and untar to make it accessible in `/opt/spark` folder.
 
 # Build and Run
 
+Please use the rscala-z branch of this repository.
+
 ```
+git clone git@github.com:datalayer/datalayer-zeppelin.git
+cd datalayer-zeppelin
+git checkout rscala-z
 mvn clean install -Pspark-1.5 -Dspark.version=1.5.0 \
   -Dhadoop.version=2.7.1 -Phadoop-2.6 -Ppyspark \
   -Dmaven.findbugs.enable=false -Drat.skip=true -Dcheckstyle.skip=true \
