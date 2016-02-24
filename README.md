@@ -11,7 +11,7 @@ It supports:
 + R to Scala binding  (passing basic R data structure to Scala).
 + R plot (ggplot2...).
 
-Please use the `[rscala-z](https://github.com/datalayer/datalayer-zeppelin/tree/rscala-z)` branch for latest development and the [PR #702 'R and SparkR Support'](https://github.com/apache/incubator-zeppelin/pull/702) on Apache Zeppelin repository.
+Please use the [rscala-z](https://github.com/datalayer/datalayer-zeppelin/tree/rscala-z) branch for latest development and [PR #702 R and SparkR Support](https://github.com/apache/incubator-zeppelin/pull/702) on Apache Zeppelin repository.
 
 ## Simple R
 
