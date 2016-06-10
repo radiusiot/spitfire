@@ -132,14 +132,15 @@ public class NotebookServer extends WebSocketServlet implements
           userAndRoles.addAll(roles);
         }
       }
+      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal);
 
       /** Lets be elegant here */
       switch (messagereceived.op) {
           case LIST_NOTES:
-            unicastNoteList(conn);
+            unicastNoteList(conn, subject);
             break;
           case RELOAD_NOTES_FROM_REPO:
-            broadcastReloadedNoteList();
+            broadcastReloadedNoteList(subject);
             break;
           case GET_HOME_NOTE:
             sendHomeNote(conn, userAndRoles, notebook);
@@ -350,7 +351,8 @@ public class NotebookServer extends WebSocketServlet implements
     }
   }
 
-  public List<Map<String, String>> generateNotebooksInfo(boolean needsReload) {
+  public List<Map<String, String>> generateNotebooksInfo(boolean needsReload,
+      AuthenticationInfo subject) {
     Notebook notebook = notebook();
 
     ZeppelinConfiguration conf = notebook.getConf();
@@ -360,7 +362,7 @@ public class NotebookServer extends WebSocketServlet implements
 
     if (needsReload) {
       try {
-        notebook.reloadAllNotes();
+        notebook.reloadAllNotes(subject);
       } catch (IOException e) {
         LOG.error("Fail to reload notes from repository", e);
       }
@@ -387,18 +389,18 @@ public class NotebookServer extends WebSocketServlet implements
     broadcast(note.id(), new Message(OP.NOTE).put("note", note));
   }
 
-  public void broadcastNoteList() {
-    List<Map<String, String>> notesInfo = generateNotebooksInfo(false);
+  public void broadcastNoteList(AuthenticationInfo subject) {
+    List<Map<String, String>> notesInfo = generateNotebooksInfo(false, subject);
     broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
 
-  public void unicastNoteList(NotebookSocket conn) {
-    List<Map<String, String>> notesInfo = generateNotebooksInfo(false);
+  public void unicastNoteList(NotebookSocket conn, AuthenticationInfo subject) {
+    List<Map<String, String>> notesInfo = generateNotebooksInfo(false, subject);
     unicast(new Message(OP.NOTES_INFO).put("notes", notesInfo), conn);
   }
 
-  public void broadcastReloadedNoteList() {
-    List<Map<String, String>> notesInfo = generateNotebooksInfo(true);
+  public void broadcastReloadedNoteList(AuthenticationInfo subject) {
+    List<Map<String, String>> notesInfo = generateNotebooksInfo(true, subject);
     broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
 
@@ -494,9 +496,10 @@ public class NotebookServer extends WebSocketServlet implements
         notebook.refreshCron(note.id());
       }
 
+      AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
       note.persist();
       broadcastNote(note);
-      broadcastNoteList();
+      broadcastNoteList(subject);
     }
   }
 
@@ -527,10 +530,11 @@ public class NotebookServer extends WebSocketServlet implements
       note.setName(noteName);
     }
 
+    AuthenticationInfo subject = new AuthenticationInfo(message.principal);
     note.persist();
     addConnectionToNote(note.id(), (NotebookSocket) conn);
     conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", note)));
-    broadcastNoteList();
+    broadcastNoteList(subject);
   }
 
   private void removeNote(NotebookSocket conn, HashSet<String> userAndRoles,
@@ -548,9 +552,10 @@ public class NotebookServer extends WebSocketServlet implements
       return;
     }
 
+    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
     notebook.removeNote(noteId);
     removeNote(noteId);
-    broadcastNoteList();
+    broadcastNoteList(subject);
   }
 
   private void updateParagraph(NotebookSocket conn, HashSet<String> userAndRoles,
@@ -587,9 +592,10 @@ public class NotebookServer extends WebSocketServlet implements
     String noteId = getOpenNoteId(conn);
     String name = (String) fromMessage.get("name");
     Note newNote = notebook.cloneNote(noteId, name);
+    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
     addConnectionToNote(newNote.id(), (NotebookSocket) conn);
     conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", newNote)));
-    broadcastNoteList();
+    broadcastNoteList(subject);
   }
 
   protected Note importNote(NotebookSocket conn, HashSet<String> userAndRoles,
@@ -599,10 +605,11 @@ public class NotebookServer extends WebSocketServlet implements
     if (fromMessage != null) {
       String noteName = (String) ((Map) fromMessage.get("notebook")).get("name");
       String noteJson = gson.toJson(fromMessage.get("notebook"));
+      AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
       note = notebook.importNote(noteJson, noteName);
       note.persist();
       broadcastNote(note);
-      broadcastNoteList();
+      broadcastNoteList(subject);
     }
     return note;
   }
