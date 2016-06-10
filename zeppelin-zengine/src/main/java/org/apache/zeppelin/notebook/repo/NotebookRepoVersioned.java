@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.zeppelin.notebook.Note;
+import org.apache.zeppelin.user.AuthenticationInfo;
 
 /**
  * Notebook repository w/ versions
@@ -32,10 +33,11 @@ public interface NotebookRepoVersioned extends NotebookRepo {
    *
    * @param noteId Id of the Notebook
    * @param rev revision of the Notebook
+   * @param subject calling subject info
    * @return a Notebook
    * @throws IOException
    */
-  public Note get(String noteId, String rev) throws IOException;
+  public Note get(String noteId, String rev, AuthenticationInfo subject) throws IOException;
 
   /**
    * List of revisions of the given Notebook
