@@ -66,8 +66,8 @@ public class GitNotebookRepo extends VFSNotebookRepo implements NotebookRepoVers
   }
 
   @Override
-  public synchronized void save(Note note) throws IOException {
-    super.save(note);
+  public synchronized void save(Note note, AuthenticationInfo subject) throws IOException {
+    super.save(note, subject);
   }
 
   /* implemented as git add+commit
