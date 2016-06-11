@@ -1056,7 +1056,8 @@ public class NotebookServer extends WebSocketServlet implements
       Message fromMessage) throws IOException {
     String noteId = (String) fromMessage.get("noteId");
     String commitMessage = (String) fromMessage.get("commitMessage");
-    notebook.checkpointNote(noteId, commitMessage);
+    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
+    notebook.checkpointNote(noteId, commitMessage, subject);
   }
 
   /**
