@@ -553,7 +553,7 @@ public class NotebookServer extends WebSocketServlet implements
     }
 
     AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
-    notebook.removeNote(noteId);
+    notebook.removeNote(noteId, subject);
     removeNote(noteId);
     broadcastNoteList(subject);
   }
