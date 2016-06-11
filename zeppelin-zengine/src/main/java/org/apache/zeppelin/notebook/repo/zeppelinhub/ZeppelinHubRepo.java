@@ -189,7 +189,8 @@ public class ZeppelinHubRepo implements NotebookRepo {
   }
 
   @Override
-  public void checkpoint(String noteId, String checkPointName) throws IOException {
+  public void checkpoint(String noteId, String checkPointName, AuthenticationInfo subject)
+      throws IOException {
     
   }
 

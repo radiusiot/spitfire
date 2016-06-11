@@ -355,13 +355,14 @@ public class NotebookRepoSync implements NotebookRepo {
 
   //checkpoint to all available storages
   @Override
-  public void checkpoint(String noteId, String checkPointName) throws IOException {
+  public void checkpoint(String noteId, String checkPointName, AuthenticationInfo subject)
+      throws IOException {
     int repoCount = getRepoCount();
     int errorCount = 0;
     String errorMessage = "";
     for (int i = 0; i < Math.min(repoCount, getMaxRepoNum()); i++) {
       try {
-        getRepo(i).checkpoint(noteId, checkPointName);
+        getRepo(i).checkpoint(noteId, checkPointName, subject);
       } catch (IOException e) {
         LOG.warn("Couldn't checkpoint in {} storage with index {} for note {}", 
           getRepo(i).getClass().toString(), i, noteId);

@@ -206,7 +206,8 @@ public class AzureNotebookRepo implements NotebookRepo {
   }
 
   @Override
-  public void checkpoint(String noteId, String checkPointName) throws IOException {
+  public void checkpoint(String noteId, String checkPointName, AuthenticationInfo subject)
+      throws IOException {
     // no-op
     LOG.info("Checkpoint feature isn't supported in {}", this.getClass().toString());
   }
