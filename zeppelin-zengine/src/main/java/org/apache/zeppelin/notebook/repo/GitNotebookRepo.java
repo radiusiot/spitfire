@@ -77,7 +77,7 @@ public class GitNotebookRepo extends VFSNotebookRepo implements NotebookRepoVers
    * @see org.apache.zeppelin.notebook.repo.VFSNotebookRepo#checkpoint(String, String)
    */
   @Override
-  public void checkpoint(String pattern, String commitMessage) {
+  public void checkpoint(String pattern, String commitMessage, AuthenticationInfo subject) {
     try {
       List<DiffEntry> gitDiff = git.diff().call();
       if (!gitDiff.isEmpty()) {
