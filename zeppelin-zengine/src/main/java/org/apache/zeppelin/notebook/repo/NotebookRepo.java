@@ -23,15 +23,44 @@ import java.util.List;
 import org.apache.zeppelin.annotation.ZeppelinApi;
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.NoteInfo;
+import org.apache.zeppelin.user.AuthenticationInfo;
 
 /**
  * Notebook repository (persistence layer) abstraction
  */
 public interface NotebookRepo {
-  @ZeppelinApi public List<NoteInfo> list() throws IOException;
-  @ZeppelinApi public Note get(String noteId) throws IOException;
-  @ZeppelinApi public void save(Note note) throws IOException;
-  @ZeppelinApi public void remove(String noteId) throws IOException;
+  /**
+   * Lists notebook information about all notebooks in storage.
+   * @param subject contains user information.
+   * @return
+   * @throws IOException
+   */
+  @ZeppelinApi public List<NoteInfo> list(AuthenticationInfo subject) throws IOException;
+
+  /**
+   * Get the notebook with the given id.
+   * @param noteId is notebook id.
+   * @param subject contains user information.
+   * @return
+   * @throws IOException
+   */
+  @ZeppelinApi public Note get(String noteId, AuthenticationInfo subject) throws IOException;
+
+  /**
+   * Save given note in storage
+   * @param note is the note itself.
+   * @param subject contains user information.
+   * @throws IOException
+   */
+  @ZeppelinApi public void save(Note note, AuthenticationInfo subject) throws IOException;
+
+  /**
+   * Remove note with given id.
+   * @param noteId is the note id.
+   * @param subject contains user information.
+   * @throws IOException
+   */
+  @ZeppelinApi public void remove(String noteId, AuthenticationInfo subject) throws IOException;
 
   /**
    * Release any underlying resources
@@ -41,5 +70,7 @@ public interface NotebookRepo {
   /**
    * chekpoint (versioning) for notebooks (optional)
    */
-  @ZeppelinApi public void checkpoint(String noteId, String checkPointName) throws IOException;
+  @ZeppelinApi
+  public void checkpoint(String noteId, String checkPointName, AuthenticationInfo subject)
+      throws IOException;
 }

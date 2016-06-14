@@ -97,7 +97,7 @@ public class GitNotebookRepoTest {
     assertThat(git).isNotNull();
 
     assertThat(dotGit.exists()).isEqualTo(true);
-    assertThat(notebookRepo.list()).isNotEmpty();
+    assertThat(notebookRepo.list(null)).isNotEmpty();
 
     List<DiffEntry> diff = git.diff().call();
     // no commit, diff isn't empty
@@ -108,7 +108,7 @@ public class GitNotebookRepoTest {
   public void showNotebookHistory() throws GitAPIException, IOException {
     //given
     notebookRepo = new GitNotebookRepo(conf);
-    assertThat(notebookRepo.list()).isNotEmpty();
+    assertThat(notebookRepo.list(null)).isNotEmpty();
 
     //when
     List<Rev> testNotebookHistory = notebookRepo.history(TEST_NOTE_ID);
@@ -122,17 +122,17 @@ public class GitNotebookRepoTest {
   public void addCheckpoint() throws IOException {
     // initial checks
     notebookRepo = new GitNotebookRepo(conf);
-    assertThat(notebookRepo.list()).isNotEmpty();
-    assertThat(containsNote(notebookRepo.list(), TEST_NOTE_ID)).isTrue();
+    assertThat(notebookRepo.list(null)).isNotEmpty();
+    assertThat(containsNote(notebookRepo.list(null), TEST_NOTE_ID)).isTrue();
     assertThat(notebookRepo.history(TEST_NOTE_ID)).isEmpty();
 
-    notebookRepo.checkpoint(TEST_NOTE_ID, "first commit");
+    notebookRepo.checkpoint(TEST_NOTE_ID, "first commit", null);
     List<Rev> notebookHistoryBefore = notebookRepo.history(TEST_NOTE_ID);
     assertThat(notebookRepo.history(TEST_NOTE_ID)).isNotEmpty();
     int initialCount = notebookHistoryBefore.size();
     
     // add changes to note
-    Note note = notebookRepo.get(TEST_NOTE_ID);
+    Note note = notebookRepo.get(TEST_NOTE_ID, null);
     Paragraph p = note.addParagraph();
     Map<String, Object> config = p.getConfig();
     config.put("enabled", true);
@@ -140,8 +140,8 @@ public class GitNotebookRepoTest {
     p.setText("%md checkpoint test text");
     
     // save and checkpoint note
-    notebookRepo.save(note);
-    notebookRepo.checkpoint(TEST_NOTE_ID, "second commit");
+    notebookRepo.save(note, null);
+    notebookRepo.checkpoint(TEST_NOTE_ID, "second commit", null);
     
     // see if commit is added
     List<Rev> notebookHistoryAfter = notebookRepo.history(TEST_NOTE_ID);
