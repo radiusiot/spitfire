@@ -38,12 +38,18 @@ import static org.junit.Assert.assertEquals;
  * Test for remote interpreter output stream
  */
 public class RemoteInterpreterOutputTestStream implements RemoteInterpreterProcessListener {
+  private static final String INTERPRETER_SCRIPT =
+          System.getProperty("os.name").startsWith("Windows") ?
+                  "../bin/interpreter.cmd" :
+                  "../bin/interpreter.sh";
   private InterpreterGroup intpGroup;
   private HashMap<String, String> env;
 
   @Before
   public void setUp() throws Exception {
     intpGroup = new InterpreterGroup();
+    intpGroup.put("note", new LinkedList<Interpreter>());
+
     env = new HashMap<String, String>();
     env.put("ZEPPELIN_CLASSPATH", new File("./target/test-classes").getAbsolutePath());
   }
@@ -57,15 +63,16 @@ public class RemoteInterpreterOutputTestStream implements RemoteInterpreterProce
   private RemoteInterpreter createMockInterpreter() {
     RemoteInterpreter intp = new RemoteInterpreter(
         new Properties(),
+        "note",
         MockInterpreterOutputStream.class.getName(),
-        new File("../bin/interpreter.sh").getAbsolutePath(),
+        new File(INTERPRETER_SCRIPT).getAbsolutePath(),
         "fake",
         "fakeRepo",
         env,
         10 * 1000,
         this);
 
-    intpGroup.add(intp);
+    intpGroup.get("note").add(intp);
     intp.setInterpreterGroup(intpGroup);
     return intp;
   }

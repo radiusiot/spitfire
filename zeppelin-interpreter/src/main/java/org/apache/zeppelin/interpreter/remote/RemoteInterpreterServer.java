@@ -23,11 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.server.TThreadPoolServer;
@@ -140,10 +136,9 @@ public class RemoteInterpreterServer
 
 
   @Override
-  public void createInterpreter(String interpreterGroupId, String className, Map<String, String>
-          properties)
-      throws TException {
-
+  public void createInterpreter(String interpreterGroupId, String noteId, String
+      className,
+                                Map<String, String> properties) throws TException {
     if (interpreterGroup == null) {
       interpreterGroup = new InterpreterGroup(interpreterGroupId);
       angularObjectRegistry = new AngularObjectRegistry(interpreterGroup.getId(), this);
@@ -156,17 +151,22 @@ public class RemoteInterpreterServer
       Class<Interpreter> replClass = (Class<Interpreter>) Object.class.forName(className);
       Properties p = new Properties();
       p.putAll(properties);
+      setSystemProperty(p);
 
       Constructor<Interpreter> constructor =
           replClass.getConstructor(new Class[] {Properties.class});
       Interpreter repl = constructor.newInstance(p);
 
-      ClassLoader cl = ClassLoader.getSystemClassLoader();
       repl.setClassloaderUrls(new URL[]{});
 
       synchronized (interpreterGroup) {
-        interpreterGroup.add(new LazyOpenInterpreter(
-            new ClassloaderInterpreter(repl, cl)));
+        List<Interpreter> interpreters = interpreterGroup.get(noteId);
+        if (interpreters == null) {
+          interpreters = new LinkedList<Interpreter>();
+          interpreterGroup.put(noteId, interpreters);
+        }
+
+        interpreters.add(new LazyOpenInterpreter(repl));
       }
 
       logger.info("Instantiate interpreter {}", className);
@@ -179,9 +179,31 @@ public class RemoteInterpreterServer
     }
   }
 
-  private Interpreter getInterpreter(String className) throws TException {
+  private void setSystemProperty(Properties properties) {
+    for (Object key : properties.keySet()) {
+      if (!RemoteInterpreter.isEnvString((String) key)) {
+        String value = properties.getProperty((String) key);
+        if (value == null || value.isEmpty()) {
+          System.clearProperty((String) key);
+        } else {
+          System.setProperty((String) key, properties.getProperty((String) key));
+        }
+      }
+    }
+  }
+
+  private Interpreter getInterpreter(String noteId, String className) throws TException {
+    if (interpreterGroup == null) {
+      throw new TException(
+          new InterpreterException("Interpreter instance " + className + " not created"));
+    }
     synchronized (interpreterGroup) {
-      for (Interpreter inp : interpreterGroup) {
+      List<Interpreter> interpreters = interpreterGroup.get(noteId);
+      if (interpreters == null) {
+        throw new TException(
+            new InterpreterException("Interpreter " + className + " not initialized"));
+      }
+      for (Interpreter inp : interpreters) {
         if (inp.getClassName().equals(className)) {
           return inp;
         }
@@ -192,23 +214,35 @@ public class RemoteInterpreterServer
   }
 
   @Override
-  public void open(String className) throws TException {
-    Interpreter intp = getInterpreter(className);
+  public void open(String noteId, String className) throws TException {
+    Interpreter intp = getInterpreter(noteId, className);
     intp.open();
   }
 
   @Override
-  public void close(String className) throws TException {
-    Interpreter intp = getInterpreter(className);
-    intp.close();
+  public void close(String noteId, String className) throws TException {
+    synchronized (interpreterGroup) {
+      List<Interpreter> interpreters = interpreterGroup.get(noteId);
+      if (interpreters != null) {
+        Iterator<Interpreter> it = interpreters.iterator();
+        while (it.hasNext()) {
+          Interpreter inp = it.next();
+          if (inp.getClassName().equals(className)) {
+            inp.close();
+            it.remove();
+            break;
+          }
+        }
+      }
+    }
   }
 
 
   @Override
-  public RemoteInterpreterResult interpret(String className, String st,
+  public RemoteInterpreterResult interpret(String noteId, String className, String st,
       RemoteInterpreterContext interpreterContext) throws TException {
     logger.debug("st: {}", st);
-    Interpreter intp = getInterpreter(className);
+    Interpreter intp = getInterpreter(noteId, className);
     InterpreterContext context = convert(interpreterContext);
 
     Scheduler scheduler = intp.getScheduler();
@@ -322,12 +356,22 @@ public class RemoteInterpreterServer
         }
 
         String interpreterResultMessage = result.message();
+
+        InterpreterResult combinedResult;
         if (interpreterResultMessage != null && !interpreterResultMessage.isEmpty()) {
           message += interpreterResultMessage;
-          return new InterpreterResult(result.code(), result.type(), message);
+          combinedResult = new InterpreterResult(result.code(), result.type(), message);
         } else {
-          return new InterpreterResult(result.code(), outputType, message);
+          combinedResult = new InterpreterResult(result.code(), outputType, message);
         }
+
+        // put result into resource pool
+        context.getResourcePool().put(
+            context.getNoteId(),
+            context.getParagraphId(),
+            WellKnownResourceName.ParagraphResult.toString(),
+            combinedResult);
+        return combinedResult;
       } finally {
         InterpreterContext.remove();
       }
@@ -341,10 +385,10 @@ public class RemoteInterpreterServer
 
 
   @Override
-  public void cancel(String className, RemoteInterpreterContext interpreterContext)
+  public void cancel(String noteId, String className, RemoteInterpreterContext interpreterContext)
       throws TException {
     logger.info("cancel {} {}", className, interpreterContext.getParagraphId());
-    Interpreter intp = getInterpreter(className);
+    Interpreter intp = getInterpreter(noteId, className);
     String jobId = interpreterContext.getParagraphId();
     Job job = intp.getScheduler().removeFromWaitingQueue(jobId);
 
@@ -356,22 +400,24 @@ public class RemoteInterpreterServer
   }
 
   @Override
-  public int getProgress(String className, RemoteInterpreterContext interpreterContext)
+  public int getProgress(String noteId, String className,
+                         RemoteInterpreterContext interpreterContext)
       throws TException {
-    Interpreter intp = getInterpreter(className);
+    Interpreter intp = getInterpreter(noteId, className);
     return intp.getProgress(convert(interpreterContext));
   }
 
 
   @Override
-  public String getFormType(String className) throws TException {
-    Interpreter intp = getInterpreter(className);
+  public String getFormType(String noteId, String className) throws TException {
+    Interpreter intp = getInterpreter(noteId, className);
     return intp.getFormType().toString();
   }
 
   @Override
-  public List<String> completion(String className, String buf, int cursor) throws TException {
-    Interpreter intp = getInterpreter(className);
+  public List<String> completion(String noteId, String className, String buf, int cursor)
+      throws TException {
+    Interpreter intp = getInterpreter(noteId, className);
     return intp.completion(buf, cursor);
   }
 
@@ -441,14 +487,19 @@ public class RemoteInterpreterServer
   }
 
   @Override
-  public String getStatus(String jobId)
+  public String getStatus(String noteId, String jobId)
       throws TException {
     if (interpreterGroup == null) {
       return "Unknown";
     }
 
     synchronized (interpreterGroup) {
-      for (Interpreter intp : interpreterGroup) {
+      List<Interpreter> interpreters = interpreterGroup.get(noteId);
+      if (interpreters == null) {
+        return "Unknown";
+      }
+
+      for (Interpreter intp : interpreters) {
         for (Job job : intp.getScheduler().getJobsRunning()) {
           if (jobId.equals(job.getId())) {
             return job.getStatus().name();
@@ -608,7 +659,7 @@ public class RemoteInterpreterServer
   }
 
   @Override
-  public List<String> resoucePoolGetAll() throws TException {
+  public List<String> resourcePoolGetAll() throws TException {
     logger.debug("Request getAll from ZeppelinServer");
 
     ResourceSet resourceSet = resourcePool.getAll(false);
@@ -623,9 +674,17 @@ public class RemoteInterpreterServer
   }
 
   @Override
-  public ByteBuffer resourceGet(String resourceName) throws TException {
+  public boolean resourceRemove(String noteId, String paragraphId, String resourceName)
+      throws TException {
+    Resource resource = resourcePool.remove(noteId, paragraphId, resourceName);
+    return resource != null;
+  }
+
+  @Override
+  public ByteBuffer resourceGet(String noteId, String paragraphId, String resourceName)
+      throws TException {
     logger.debug("Request resourceGet {} from ZeppelinServer", resourceName);
-    Resource resource = resourcePool.get(resourceName, false);
+    Resource resource = resourcePool.get(noteId, paragraphId, resourceName, false);
 
     if (resource == null || resource.get() == null || !resource.isSerializable()) {
       return ByteBuffer.allocate(0);
@@ -636,6 +695,18 @@ public class RemoteInterpreterServer
         logger.error(e.getMessage(), e);
         return ByteBuffer.allocate(0);
       }
+    }
+  }
+
+  @Override
+  public void angularRegistryPush(String registryAsString) throws TException {
+    try {
+      Map<String, Map<String, AngularObject>> deserializedRegistry = gson
+              .fromJson(registryAsString,
+                      new TypeToken<Map<String, Map<String, AngularObject>>>() { }.getType());
+      interpreterGroup.getAngularObjectRegistry().setRegistry(deserializedRegistry);
+    } catch (Exception e) {
+      logger.info("Exception in RemoteInterpreterServer while angularRegistryPush, nolock", e);
     }
   }
 }

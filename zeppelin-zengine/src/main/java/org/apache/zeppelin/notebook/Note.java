@@ -32,12 +32,15 @@ import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.remote.RemoteAngularObjectRegistry;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.utility.IdHashes;
+import org.apache.zeppelin.resource.ResourcePoolUtils;
 import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.apache.zeppelin.search.SearchService;
 
 import com.google.gson.Gson;
+import org.apache.zeppelin.user.AuthenticationInfo;
+import org.apache.zeppelin.user.Credentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +71,7 @@ public class Note implements Serializable, JobListener {
   private transient NotebookRepo repo;
   private transient SearchService index;
   private transient ScheduledFuture delayedPersist;
+  private transient Credentials credentials;
 
   /**
    * note configurations.
@@ -87,11 +91,12 @@ public class Note implements Serializable, JobListener {
   public Note() {}
 
   public Note(NotebookRepo repo, NoteInterpreterLoader replLoader,
-      JobListenerFactory jlFactory, SearchService noteIndex) {
+      JobListenerFactory jlFactory, SearchService noteIndex, Credentials credentials) {
     this.repo = repo;
     this.replLoader = replLoader;
     this.jobListenerFactory = jlFactory;
     this.index = noteIndex;
+    this.credentials = credentials;
     generateId();
   }
 
@@ -111,7 +116,23 @@ public class Note implements Serializable, JobListener {
     return name;
   }
 
+  private String normalizeNoteName(String name){
+    name = name.trim();
+    name = name.replace("\\", "/");
+    while (name.indexOf("///") >= 0) {
+      name = name.replaceAll("///", "/");
+    }
+    name = name.replaceAll("//", "/");
+    if (name.length() == 0) {
+      name = "/";
+    }
+    return name;
+  }
+
   public void setName(String name) {
+    if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0) {
+      name = normalizeNoteName(name);
+    }
     this.name = name;
   }
 
@@ -143,6 +164,15 @@ public class Note implements Serializable, JobListener {
     this.index = index;
   }
 
+  public Credentials getCredentials() {
+    return credentials;
+  };
+
+  public void setCredentials(Credentials credentials) {
+    this.credentials = credentials;
+  }
+
+
   @SuppressWarnings("rawtypes")
   public Map<String, List<AngularObject>> getAngularObjects() {
     return angularObjects;
@@ -166,7 +196,9 @@ public class Note implements Serializable, JobListener {
    * @param srcParagraph
    */
   public void addCloneParagraph(Paragraph srcParagraph) {
-    Paragraph newParagraph = new Paragraph(this, this, replLoader);
+
+    // Keep paragraph original ID
+    final Paragraph newParagraph = new Paragraph(srcParagraph.getId(), this, this, replLoader);
 
     Map<String, Object> config = new HashMap<>(srcParagraph.getConfig());
     Map<String, Object> param = new HashMap<>(srcParagraph.settings.getParams());
@@ -208,6 +240,8 @@ public class Note implements Serializable, JobListener {
    * @return a paragraph that was deleted, or <code>null</code> otherwise
    */
   public Paragraph removeParagraph(String paragraphId) {
+    removeAllAngularObjectInParagraph(paragraphId);
+    ResourcePoolUtils.removeResourcesBelongsToParagraph(id(), paragraphId);
     synchronized (paragraphs) {
       Iterator<Paragraph> i = paragraphs.iterator();
       while (i.hasNext()) {
@@ -220,7 +254,7 @@ public class Note implements Serializable, JobListener {
       }
     }
 
-    removeAllAngularObjectInParagraph(paragraphId);
+
     return null;
   }
 
@@ -347,11 +381,15 @@ public class Note implements Serializable, JobListener {
    * Run all paragraphs sequentially.
    */
   public void runAll() {
+    String cronExecutingUser = (String) getConfig().get("cronExecutingUser");
     synchronized (paragraphs) {
       for (Paragraph p : paragraphs) {
         if (!p.isEnabled()) {
           continue;
         }
+        AuthenticationInfo authenticationInfo = new AuthenticationInfo();
+        authenticationInfo.setUser(cronExecutingUser);
+        p.setAuthenticationInfo(authenticationInfo);
         p.setNoteReplLoader(replLoader);
         p.setListener(jobListenerFactory.getParagraphJobListener(this));
         Interpreter intp = replLoader.get(p.getRequiredReplName());
@@ -400,7 +438,7 @@ public class Note implements Serializable, JobListener {
     }
 
     for (InterpreterSetting setting : settings) {
-      InterpreterGroup intpGroup = setting.getInterpreterGroup();
+      InterpreterGroup intpGroup = setting.getInterpreterGroup(id);
       AngularObjectRegistry registry = intpGroup.getAngularObjectRegistry();
       angularObjects.put(intpGroup.getId(), registry.getAllWithGlobal(id));
     }
@@ -415,7 +453,7 @@ public class Note implements Serializable, JobListener {
     }
 
     for (InterpreterSetting setting : settings) {
-      InterpreterGroup intpGroup = setting.getInterpreterGroup();
+      InterpreterGroup intpGroup = setting.getInterpreterGroup(id);
       AngularObjectRegistry registry = intpGroup.getAngularObjectRegistry();
 
       if (registry instanceof RemoteAngularObjectRegistry) {

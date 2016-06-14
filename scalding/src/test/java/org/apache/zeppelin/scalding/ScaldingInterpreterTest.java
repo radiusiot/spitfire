@@ -57,6 +57,7 @@ public class ScaldingInterpreterTest {
 
     if (repl == null) {
       Properties p = new Properties();
+      p.setProperty(ScaldingInterpreter.ARGS_STRING, "--local --repl");
 
       repl = new ScaldingInterpreter(p);
       repl.open();
@@ -89,6 +90,17 @@ public class ScaldingInterpreterTest {
   }
 
   @Test
+  public void testNextLineComments() {
+    assertEquals(InterpreterResult.Code.SUCCESS, repl.interpret("\"123\"\n/*comment here\n*/.toInt", context).code());
+  }
+
+  @Test
+  public void testNextLineCompanionObject() {
+    String code = "class Counter {\nvar value: Long = 0\n}\n // comment\n\n object Counter {\n def apply(x: Long) = new Counter()\n}";
+    assertEquals(InterpreterResult.Code.SUCCESS, repl.interpret(code, context).code());
+  }
+
+  @Test
   public void testBasicIntp() {
     assertEquals(InterpreterResult.Code.SUCCESS,
         repl.interpret("val a = 1\nval b = 2", context).code());
@@ -108,7 +120,7 @@ public class ScaldingInterpreterTest {
           "val salesPipe = TypedPipe.from(salesList)\n" +
           "val results = salesPipe.map{x => (1, Set(x.state), x.sale)}.\n" +
           "    groupAll.sum.values.map{ case(count, set, sum) => (count, set.size, sum) }\n" +
-          "results.dump", 
+          "results.dump",
           context).code());
   }
 

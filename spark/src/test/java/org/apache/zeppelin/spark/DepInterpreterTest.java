@@ -39,6 +39,13 @@ public class DepInterpreterTest {
   private File tmpDir;
   private SparkInterpreter repl;
 
+  private Properties getTestProperties() {
+    Properties p = new Properties();
+    p.setProperty("zeppelin.dep.localrepo", "local-repo");
+    p.setProperty("zeppelin.dep.additionalRemoteRepository", "spark-packages,http://dl.bintray.com/spark-packages/maven,false;");
+    return p;
+  }
+
   @Before
   public void setUp() throws Exception {
     tmpDir = new File(System.getProperty("java.io.tmpdir") + "/ZeppelinLTest_" + System.currentTimeMillis());
@@ -46,14 +53,15 @@ public class DepInterpreterTest {
 
     tmpDir.mkdirs();
 
-    Properties p = new Properties();
+    Properties p = getTestProperties();
 
     dep = new DepInterpreter(p);
     dep.open();
 
     InterpreterGroup intpGroup = new InterpreterGroup();
-    intpGroup.add(new SparkInterpreter(p));
-    intpGroup.add(dep);
+    intpGroup.put("note", new LinkedList<Interpreter>());
+    intpGroup.get("note").add(new SparkInterpreter(p));
+    intpGroup.get("note").add(dep);
     dep.setInterpreterGroup(intpGroup);
 
     context = new InterpreterContext("note", "id", "title", "text", new AuthenticationInfo(),

@@ -22,22 +22,30 @@ limitations under the License.
 
 
 ## Zeppelin Installation
-Welcome to your first trial to explore Zeppelin ! 
+Welcome to your first trial to explore Zeppelin!
 
-In this documentation, we will explain how you can install Zeppelin from **Binary Package** or build from **Source** by yourself. Plus, you can see all of Zeppelin's configurations in the **Zeppelin Configuration** section below.
+In this documentation, we will explain how you can install Zeppelin from **Binary Package** or build from **Source** by yourself. Plus, you can see all of Zeppelin's configurations in the [Zeppelin Configuration](install.html#zeppelin-configuration) section below.
 
 ### Install with Binary Package
 
-If you want to install Zeppelin with latest binary package, please visit [this page](http://zeppelin.incubator.apache.org/download.html).
+If you want to install Zeppelin with latest binary package, please visit [this page](http://zeppelin.apache.org/download.html).
 
 ### Build from Zeppelin Source
 
-You can also build Zeppelin from the source. Please check instructions in `README.md` in [Zeppelin github](https://github.com/apache/incubator-zeppelin/blob/master/README.md). 
+You can also build Zeppelin from the source.
 
+#### Prerequisites for build
+ * Java 1.7
+ * Git
+ * Maven(3.1.x or higher)
+ * Node.js Package Manager
 
+If you don't have requirements prepared, please check instructions in [README.md](https://github.com/apache/zeppelin/blob/master/README.md) for the details.
+
+<a name="zeppelin-configuration"> </a>
 ## Zeppelin Configuration
 
-You can configure Zeppelin with both **environment variables** in `conf/zeppelin-env.sh` and **java properties** in `conf/zeppelin-site.xml`. If both are defined, then the **environment variables** will be used priorly.
+You can configure Zeppelin with both **environment variables** in `conf/zeppelin-env.sh` (`conf\zeppelin-env.cmd` for Windows) and **Java properties** in `conf/zeppelin-site.xml`. If both are defined, then the **environment variables** will take priority.
 
 <table class="table-configuration">
   <tr>
@@ -179,6 +187,24 @@ You can configure Zeppelin with both **environment variables** in `conf/zeppelin
     <td>A user name of S3 bucket<br />i.e. <code>bucket/user/notebook/2A94M5J1Z/note.json</code></td>
   </tr>
   <tr>
+    <td>ZEPPELIN_NOTEBOOK_S3_ENDPOINT</td>
+    <td>zeppelin.notebook.s3.endpoint</td>
+    <td>s3.amazonaws.com</td>
+    <td>Endpoint for the bucket</td>
+  </tr>
+  <tr>
+    <td>ZEPPELIN_NOTEBOOK_S3_KMS_KEY_ID</td>
+    <td>zeppelin.notebook.s3.kmsKeyID</td>
+    <td></td>
+    <td>AWS KMS Key ID to use for encrypting data in S3 (optional)</td>
+  </tr>
+  <tr>
+    <td>ZEPPELIN_NOTEBOOK_S3_EMP</td>
+    <td>zeppelin.notebook.s3.encryptionMaterialsProvider</td>
+    <td></td>
+    <td>Class name of a custom S3 encryption materials provider implementation to use for encrypting data in S3 (optional)</td>
+  </tr>
+  <tr>
     <td>ZEPPELIN_NOTEBOOK_AZURE_CONNECTION_STRING</td>
     <td>zeppelin.notebook.azure.connectionString</td>
     <td></td>
@@ -206,7 +232,7 @@ You can configure Zeppelin with both **environment variables** in `conf/zeppelin
     <td>ZEPPELIN_INTERPRETERS</td>
     <td>zeppelin.interpreters</td>
   <description></description>
-    <td>org.apache.zeppelin.spark.SparkInterpreter,<br />org.apache.zeppelin.spark.PySparkInterpreter,<br />org.apache.zeppelin.spark.SparkSqlInterpreter,<br />org.apache.zeppelin.spark.DepInterpreter,<br />org.apache.zeppelin.markdown.Markdown,<br />org.apache.zeppelin.shell.ShellInterpreter,<br />org.apache.zeppelin.hive.HiveInterpreter<br />
+    <td>org.apache.zeppelin.spark.SparkInterpreter,<br />org.apache.zeppelin.spark.PySparkInterpreter,<br />org.apache.zeppelin.spark.SparkSqlInterpreter,<br />org.apache.zeppelin.spark.DepInterpreter,<br />org.apache.zeppelin.markdown.Markdown,<br />org.apache.zeppelin.shell.ShellInterpreter,<br />
     ...
     </td>
     <td>Comma separated interpreter configurations [Class] <br /> The first interpreter will be a default value. <br /> It means only the first interpreter in this list can be available without <code>%interpreter_name</code> annotation in Zeppelin notebook paragraph. </td>
@@ -217,10 +243,16 @@ You can configure Zeppelin with both **environment variables** in `conf/zeppelin
     <td>interpreter</td>
     <td>Zeppelin interpreter directory</td>
   </tr>
+  <tr>
+    <td>ZEPPELIN_WEBSOCKET_MAX_TEXT_MESSAGE_SIZE</td>
+    <td>zeppelin.websocket.max.text.message.size</td>
+    <td>1024000</td>
+    <td>Size in characters of the maximum text message to be received by websocket.</td>
+  </tr>
 </table>
 
 Maybe you need to configure individual interpreter. If so, please check **Interpreter** section in Zeppelin documentation.
-[Spark Interpreter for Apache Zeppelin](../interpreter/spark.html) will be a good example. 
+[Spark Interpreter for Apache Zeppelin](../interpreter/spark.html) will be a good example.
 
 ## Zeppelin Start / Stop
 #### Start Zeppelin
@@ -240,9 +272,9 @@ bin/zeppelin-daemon.sh stop
 
 Zeppelin can auto start as a service with an init script, such as services managed by upstart.
 
-The following is an example upstart script to be saved as `/etc/init/zeppelin.conf` 
+The following is an example upstart script to be saved as `/etc/init/zeppelin.conf`
 This example has been tested with Ubuntu Linux.
-This also allows the service to be managed with commands such as 
+This also allows the service to be managed with commands such as
 
 `sudo service zeppelin start`  
 `sudo service zeppelin stop`  
@@ -270,4 +302,8 @@ chdir /usr/share/zeppelin
 exec bin/zeppelin-daemon.sh upstart
 ```
 
+#### Running on Windows
 
+```
+bin\zeppelin.cmd
+```

@@ -39,6 +39,10 @@ import static org.junit.Assert.assertTrue;
  * Unittest for DistributedResourcePool
  */
 public class DistributedResourcePoolTest {
+  private static final String INTERPRETER_SCRIPT =
+          System.getProperty("os.name").startsWith("Windows") ?
+                  "../bin/interpreter.cmd" :
+                  "../bin/interpreter.sh";
   private InterpreterGroup intpGroup1;
   private InterpreterGroup intpGroup2;
   private HashMap<String, String> env;
@@ -58,8 +62,9 @@ public class DistributedResourcePoolTest {
 
     intp1 = new RemoteInterpreter(
         p,
+        "note",
         MockInterpreterResourcePool.class.getName(),
-        new File("../bin/interpreter.sh").getAbsolutePath(),
+        new File(INTERPRETER_SCRIPT).getAbsolutePath(),
         "fake",
         "fakeRepo",
         env,
@@ -68,13 +73,15 @@ public class DistributedResourcePoolTest {
     );
 
     intpGroup1 = new InterpreterGroup("intpGroup1");
-    intpGroup1.add(intp1);
+    intpGroup1.put("note", new LinkedList<Interpreter>());
+    intpGroup1.get("note").add(intp1);
     intp1.setInterpreterGroup(intpGroup1);
 
     intp2 = new RemoteInterpreter(
         p,
+        "note",
         MockInterpreterResourcePool.class.getName(),
-        new File("../bin/interpreter.sh").getAbsolutePath(),
+        new File(INTERPRETER_SCRIPT).getAbsolutePath(),
         "fake",
         "fakeRepo",        
         env,
@@ -83,7 +90,8 @@ public class DistributedResourcePoolTest {
     );
 
     intpGroup2 = new InterpreterGroup("intpGroup2");
-    intpGroup2.add(intp2);
+    intpGroup2.put("note", new LinkedList<Interpreter>());
+    intpGroup2.get("note").add(intp2);
     intp2.setInterpreterGroup(intpGroup2);
 
     context = new InterpreterContext(
@@ -132,12 +140,13 @@ public class DistributedResourcePoolTest {
     InterpreterResult ret;
     intp1.interpret("put key1 value1", context);
     intp2.interpret("put key2 value2", context);
+    int numInterpreterResult = 2;
 
     ret = intp1.interpret("getAll", context);
-    assertEquals(2, gson.fromJson(ret.message(), ResourceSet.class).size());
+    assertEquals(numInterpreterResult + 2, gson.fromJson(ret.message(), ResourceSet.class).size());
 
     ret = intp2.interpret("getAll", context);
-    assertEquals(2, gson.fromJson(ret.message(), ResourceSet.class).size());
+    assertEquals(numInterpreterResult + 2, gson.fromJson(ret.message(), ResourceSet.class).size());
 
     ret = intp1.interpret("get key1", context);
     assertEquals("value1", gson.fromJson(ret.message(), String.class));
@@ -196,5 +205,45 @@ public class DistributedResourcePoolTest {
     // test getAll() is locality aware
     assertEquals("value1", pool1.getAll().get(0).get());
     assertEquals("value2", pool1.getAll().get(1).get());
+  }
+
+  @Test
+  public void testResourcePoolUtils() {
+    Gson gson = new Gson();
+    InterpreterResult ret;
+
+    // when create some resources
+    intp1.interpret("put note1:paragraph1:key1 value1", context);
+    intp1.interpret("put note1:paragraph2:key1 value2", context);
+    intp2.interpret("put note2:paragraph1:key1 value1", context);
+    intp2.interpret("put note2:paragraph2:key2 value2", context);
+
+    int numInterpreterResult = 2;
+
+    // then get all resources.
+    assertEquals(numInterpreterResult + 4, ResourcePoolUtils.getAllResources().size());
+
+    // when remove all resources from note1
+    ResourcePoolUtils.removeResourcesBelongsToNote("note1");
+
+    // then resources should be removed.
+    assertEquals(numInterpreterResult + 2, ResourcePoolUtils.getAllResources().size());
+    assertEquals("", gson.fromJson(
+        intp1.interpret("get note1:paragraph1:key1", context).message(),
+        String.class));
+    assertEquals("", gson.fromJson(
+        intp1.interpret("get note1:paragraph2:key1", context).message(),
+        String.class));
+
+
+    // when remove all resources from note2:paragraph1
+    ResourcePoolUtils.removeResourcesBelongsToParagraph("note2", "paragraph1");
+
+    // then 1
+    assertEquals(numInterpreterResult + 1, ResourcePoolUtils.getAllResources().size());
+    assertEquals("value2", gson.fromJson(
+        intp1.interpret("get note2:paragraph2:key2", context).message(),
+        String.class));
+
   }
 }

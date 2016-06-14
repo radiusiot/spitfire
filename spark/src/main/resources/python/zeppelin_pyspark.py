@@ -41,6 +41,9 @@ class Logger(object):
   def reset(self):
     self.out = ""
 
+  def flush(self):
+    pass
+
 
 class PyZeppelinContext(dict):
   def __init__(self, zc):
@@ -80,9 +83,19 @@ class PyZeppelinContext(dict):
 
   def select(self, name, options, defaultValue = ""):
     # auto_convert to ArrayList doesn't match the method signature on JVM side
-    tuples = map(lambda items: self.__tupleToScalaTuple2(items), options)
+    tuples = list(map(lambda items: self.__tupleToScalaTuple2(items), options))
     iterables = gateway.jvm.scala.collection.JavaConversions.collectionAsScalaIterable(tuples)
     return self.z.select(name, defaultValue, iterables)
+
+  def checkbox(self, name, options, defaultChecked = None):
+    if defaultChecked is None:
+      defaultChecked = list(map(lambda items: items[0], options))
+    optionTuples = list(map(lambda items: self.__tupleToScalaTuple2(items), options))
+    optionIterables = gateway.jvm.scala.collection.JavaConversions.collectionAsScalaIterable(optionTuples)
+    defaultCheckedIterables = gateway.jvm.scala.collection.JavaConversions.collectionAsScalaIterable(defaultChecked)
+
+    checkedIterables = self.z.checkbox(name, defaultCheckedIterables, optionIterables)
+    return gateway.jvm.scala.collection.JavaConversions.asJavaCollection(checkedIterables)
 
   def __tupleToScalaTuple2(self, tuple):
     if (len(tuple) == 2):
@@ -105,6 +118,9 @@ class SparkVersion(object):
     return self.version >= self.SPARK_1_3_0
 
 class PySparkCompletion:
+  def __init__(self, interpreterObject):
+    self.interpreterObject = interpreterObject
+
   def getGlobalCompletion(self):
     objectDefList = []
     try:
@@ -146,9 +162,10 @@ class PySparkCompletion:
         for completionItem in list(objectCompletionList):
           completionList.add(completionItem)
     if len(completionList) <= 0:
-      print("")
+      self.interpreterObject.setStatementsFinished("", False)
     else:
-      print(json.dumps(list(filter(lambda x : not re.match("^__.*", x), list(completionList)))))
+      result = json.dumps(list(filter(lambda x : not re.match("^__.*", x), list(completionList))))
+      self.interpreterObject.setStatementsFinished(result, False)
 
 
 output = Logger()
@@ -192,7 +209,7 @@ sc = SparkContext(jsc=jsc, gateway=gateway, conf=conf)
 sqlc = SQLContext(sc, intp.getSQLContext())
 sqlContext = sqlc
 
-completion = PySparkCompletion()
+completion = PySparkCompletion(intp)
 z = PyZeppelinContext(intp.getZeppelinContext())
 
 while True :

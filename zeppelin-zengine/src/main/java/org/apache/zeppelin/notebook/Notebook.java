@@ -40,8 +40,10 @@ import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.interpreter.remote.RemoteAngularObjectRegistry;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.repo.NotebookRepoSync;
+import org.apache.zeppelin.resource.ResourcePoolUtils;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.search.SearchService;
+import org.apache.zeppelin.user.Credentials;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.JobBuilder;
@@ -76,6 +78,8 @@ public class Notebook {
   private JobListenerFactory jobListenerFactory;
   private NotebookRepo notebookRepo;
   private SearchService notebookIndex;
+  private NotebookAuthorization notebookAuthorization;
+  private Credentials credentials;
 
   /**
    * Main constructor \w manual Dependency Injection
@@ -86,6 +90,7 @@ public class Notebook {
    * @param replFactory
    * @param jobListenerFactory
    * @param notebookIndex - (nullable) for indexing all notebooks on creating.
+   * @param notebookAuthorization
    *
    * @throws IOException
    * @throws SchedulerException
@@ -93,13 +98,17 @@ public class Notebook {
   public Notebook(ZeppelinConfiguration conf, NotebookRepo notebookRepo,
       SchedulerFactory schedulerFactory,
       InterpreterFactory replFactory, JobListenerFactory jobListenerFactory,
-      SearchService notebookIndex) throws IOException, SchedulerException {
+      SearchService notebookIndex,
+      NotebookAuthorization notebookAuthorization,
+      Credentials credentials) throws IOException, SchedulerException {
     this.conf = conf;
     this.notebookRepo = notebookRepo;
     this.schedulerFactory = schedulerFactory;
     this.replFactory = replFactory;
     this.jobListenerFactory = jobListenerFactory;
     this.notebookIndex = notebookIndex;
+    this.notebookAuthorization = notebookAuthorization;
+    this.credentials = credentials;
     quertzSchedFact = new org.quartz.impl.StdSchedulerFactory();
     quartzSched = quertzSchedFact.getScheduler();
     quartzSched.start();
@@ -141,7 +150,7 @@ public class Notebook {
    */
   public Note createNote(List<String> interpreterIds) throws IOException {
     NoteInterpreterLoader intpLoader = new NoteInterpreterLoader(replFactory);
-    Note note = new Note(notebookRepo, intpLoader, jobListenerFactory, notebookIndex);
+    Note note = new Note(notebookRepo, intpLoader, jobListenerFactory, notebookIndex, credentials);
     intpLoader.setNoteId(note.id());
     synchronized (notes) {
       notes.put(note.id(), note);
@@ -244,7 +253,8 @@ public class Notebook {
     Note note = getNote(id);
     if (note != null) {
       note.getNoteReplLoader().setInterpreters(interpreterSettingIds);
-      replFactory.putNoteInterpreterSettingBinding(id, interpreterSettingIds);
+      // comment out while note.getNoteReplLoader().setInterpreters(...) do the same
+      // replFactory.putNoteInterpreterSettingBinding(id, interpreterSettingIds);
     }
   }
 
@@ -278,11 +288,13 @@ public class Notebook {
     synchronized (notes) {
       note = notes.remove(id);
     }
+    replFactory.removeNoteInterpreterSettingBinding(id);
     notebookIndex.deleteIndexDocs(note);
+    notebookAuthorization.removeNote(id);
 
     // remove from all interpreter instance's angular object registry
     for (InterpreterSetting settings : replFactory.get()) {
-      AngularObjectRegistry registry = settings.getInterpreterGroup().getAngularObjectRegistry();
+      AngularObjectRegistry registry = settings.getInterpreterGroup(id).getAngularObjectRegistry();
       if (registry instanceof RemoteAngularObjectRegistry) {
         // remove paragraph scope object
         for (Paragraph p : note.getParagraphs()) {
@@ -299,6 +311,8 @@ public class Notebook {
         registry.removeAll(id, null);
       }
     }
+
+    ResourcePoolUtils.removeResourcesBelongsToNote(id);
 
     try {
       note.unpersist();
@@ -325,6 +339,7 @@ public class Notebook {
 
     //Manually inject ALL dependencies, as DI constructor was NOT used
     note.setIndex(this.notebookIndex);
+    note.setCredentials(this.credentials);
 
     NoteInterpreterLoader replLoader = new NoteInterpreterLoader(replFactory);
     note.setReplLoader(replLoader);
@@ -370,7 +385,7 @@ public class Notebook {
       SnapshotAngularObject snapshot = angularObjectSnapshot.get(name);
       List<InterpreterSetting> settings = replFactory.get();
       for (InterpreterSetting setting : settings) {
-        InterpreterGroup intpGroup = setting.getInterpreterGroup();
+        InterpreterGroup intpGroup = setting.getInterpreterGroup(note.id());
         if (intpGroup.getId().equals(snapshot.getIntpGroupId())) {
           AngularObjectRegistry registry = intpGroup.getAngularObjectRegistry();
           String noteId = snapshot.getAngularObject().getNoteId();
@@ -571,6 +586,10 @@ public class Notebook {
 
   public InterpreterFactory getInterpreterFactory() {
     return replFactory;
+  }
+
+  public NotebookAuthorization getNotebookAuthorization() {
+    return notebookAuthorization;
   }
 
   public ZeppelinConfiguration getConf() {

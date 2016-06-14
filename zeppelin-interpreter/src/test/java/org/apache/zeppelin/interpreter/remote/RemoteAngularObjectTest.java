@@ -35,6 +35,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
+  private static final String INTERPRETER_SCRIPT =
+          System.getProperty("os.name").startsWith("Windows") ?
+                  "../bin/interpreter.cmd" :
+                  "../bin/interpreter.sh";
+
   private InterpreterGroup intpGroup;
   private HashMap<String, String> env;
   private RemoteInterpreter intp;
@@ -61,8 +66,9 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
 
     intp = new RemoteInterpreter(
         p,
+        "note",
         MockInterpreterAngular.class.getName(),
-        new File("../bin/interpreter.sh").getAbsolutePath(),
+        new File(INTERPRETER_SCRIPT).getAbsolutePath(),
         "fake",
         "fakeRepo",
         env,
@@ -70,7 +76,8 @@ public class RemoteAngularObjectTest implements AngularObjectRegistryListener {
         null
     );
 
-    intpGroup.add(intp);
+    intpGroup.put("note", new LinkedList<Interpreter>());
+    intpGroup.get("note").add(intp);
     intp.setInterpreterGroup(intpGroup);
 
     context = new InterpreterContext(

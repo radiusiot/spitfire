@@ -67,19 +67,6 @@ public class FlinkInterpreter extends Interpreter {
     super(property);
   }
 
-  static {
-    Interpreter.register(
-        "flink",
-        "flink",
-        FlinkInterpreter.class.getName(),
-        new InterpreterPropertyBuilder()
-                .add("host", "local",
-                    "host name of running JobManager. 'local' runs flink in local mode")
-          .add("port", "6123", "port of running JobManager")
-          .build()
-    );
-  }
-
   @Override
   public void open() {
     out = new ByteArrayOutputStream();
@@ -249,12 +236,34 @@ public class FlinkInterpreter extends Interpreter {
     Code r = null;
 
     String incomplete = "";
+    boolean inComment = false;
+
     for (int l = 0; l < linesToRun.length; l++) {
       final String s = linesToRun[l];
       // check if next line starts with "." (but not ".." or "./") it is treated as an invocation
       if (l + 1 < linesToRun.length) {
         String nextLine = linesToRun[l + 1].trim();
-        if (nextLine.startsWith(".") && !nextLine.startsWith("..") && !nextLine.startsWith("./")) {
+        boolean continuation = false;
+        if (nextLine.isEmpty()
+                || nextLine.startsWith("//")         // skip empty line or comment
+                || nextLine.startsWith("}")
+                || nextLine.startsWith("object")) { // include "} object" for Scala companion object
+          continuation = true;
+        } else if (!inComment && nextLine.startsWith("/*")) {
+          inComment = true;
+          continuation = true;
+        } else if (inComment && nextLine.lastIndexOf("*/") >= 0) {
+          inComment = false;
+          continuation = true;
+        } else if (nextLine.length() > 1
+                && nextLine.charAt(0) == '.'
+                && nextLine.charAt(1) != '.'     // ".."
+                && nextLine.charAt(1) != '/') {  // "./"
+          continuation = true;
+        } else if (inComment) {
+          continuation = true;
+        }
+        if (continuation) {
           incomplete += s + "\n";
           continue;
         }

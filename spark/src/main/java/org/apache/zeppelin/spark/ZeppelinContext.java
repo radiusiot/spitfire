@@ -17,7 +17,9 @@
 
 package org.apache.zeppelin.spark;
 
+import static scala.collection.JavaConversions.asJavaCollection;
 import static scala.collection.JavaConversions.asJavaIterable;
+import static scala.collection.JavaConversions.collectionAsScalaIterable;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -30,6 +32,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.hive.HiveContext;
+import org.apache.zeppelin.annotation.ZeppelinApi;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectWatcher;
@@ -70,19 +73,46 @@ public class ZeppelinContext {
   public HiveContext hiveContext;
   private GUI gui;
 
+  @ZeppelinApi
   public Object input(String name) {
     return input(name, "");
   }
 
+  @ZeppelinApi
   public Object input(String name, Object defaultValue) {
     return gui.input(name, defaultValue);
   }
 
+  @ZeppelinApi
   public Object select(String name, scala.collection.Iterable<Tuple2<Object, String>> options) {
     return select(name, "", options);
   }
 
+  @ZeppelinApi
   public Object select(String name, Object defaultValue,
+      scala.collection.Iterable<Tuple2<Object, String>> options) {
+    return gui.select(name, defaultValue, tuplesToParamOptions(options));
+  }
+
+  @ZeppelinApi
+  public scala.collection.Iterable<Object> checkbox(String name,
+      scala.collection.Iterable<Tuple2<Object, String>> options) {
+    List<Object> allChecked = new LinkedList<Object>();
+    for (Tuple2<Object, String> option : asJavaIterable(options)) {
+      allChecked.add(option._1());
+    }
+    return checkbox(name, collectionAsScalaIterable(allChecked), options);
+  }
+
+  @ZeppelinApi
+  public scala.collection.Iterable<Object> checkbox(String name,
+      scala.collection.Iterable<Object> defaultChecked,
+      scala.collection.Iterable<Tuple2<Object, String>> options) {
+    return collectionAsScalaIterable(gui.checkbox(name, asJavaCollection(defaultChecked),
+      tuplesToParamOptions(options)));
+  }
+
+  private ParamOption[] tuplesToParamOptions(
       scala.collection.Iterable<Tuple2<Object, String>> options) {
     int n = options.size();
     ParamOption[] paramOptions = new ParamOption[n];
@@ -94,7 +124,7 @@ public class ZeppelinContext {
       paramOptions[i++] = new ParamOption(valueAndDisplayValue._1(), valueAndDisplayValue._2());
     }
 
-    return gui.select(name, defaultValue, paramOptions);
+    return paramOptions;
   }
 
   public void setGui(GUI o) {
@@ -120,6 +150,7 @@ public class ZeppelinContext {
    * show DataFrame or SchemaRDD
    * @param o DataFrame or SchemaRDD object
    */
+  @ZeppelinApi
   public void show(Object o) {
     show(o, maxResult);
   }
@@ -129,6 +160,8 @@ public class ZeppelinContext {
    * @param o DataFrame or SchemaRDD object
    * @param maxResult maximum number of rows to display
    */
+
+  @ZeppelinApi
   public void show(Object o, int maxResult) {
     Class cls = null;
     try {
@@ -244,6 +277,7 @@ public class ZeppelinContext {
    * Run paragraph by id
    * @param id
    */
+  @ZeppelinApi
   public void run(String id) {
     run(id, interpreterContext);
   }
@@ -253,6 +287,7 @@ public class ZeppelinContext {
    * @param id
    * @param context
    */
+  @ZeppelinApi
   public void run(String id, InterpreterContext context) {
     if (id.equals(context.getParagraphId())) {
       throw new InterpreterException("Can not run current Paragraph");
@@ -272,6 +307,7 @@ public class ZeppelinContext {
    * Run paragraph at idx
    * @param idx
    */
+  @ZeppelinApi
   public void run(int idx) {
     run(idx, interpreterContext);
   }
@@ -294,6 +330,7 @@ public class ZeppelinContext {
     runner.run();
   }
 
+  @ZeppelinApi
   public void run(List<Object> paragraphIdOrIdx) {
     run(paragraphIdOrIdx, interpreterContext);
   }
@@ -302,6 +339,7 @@ public class ZeppelinContext {
    * Run paragraphs
    * @param paragraphIdOrIdx list of paragraph id or idx
    */
+  @ZeppelinApi
   public void run(List<Object> paragraphIdOrIdx, InterpreterContext context) {
     for (Object idOrIdx : paragraphIdOrIdx) {
       if (idOrIdx instanceof String) {
@@ -316,6 +354,7 @@ public class ZeppelinContext {
     }
   }
 
+  @ZeppelinApi
   public void runAll() {
     runAll(interpreterContext);
   }
@@ -323,6 +362,7 @@ public class ZeppelinContext {
   /**
    * Run all paragraphs. except this.
    */
+  @ZeppelinApi
   public void runAll(InterpreterContext context) {
     for (InterpreterContextRunner r : context.getRunners()) {
       if (r.getParagraphId().equals(context.getParagraphId())) {
@@ -333,6 +373,7 @@ public class ZeppelinContext {
     }
   }
 
+  @ZeppelinApi
   public List<String> listParagraphs() {
     List<String> paragraphs = new LinkedList<String>();
 
@@ -348,7 +389,11 @@ public class ZeppelinContext {
     AngularObjectRegistry registry = interpreterContext.getAngularObjectRegistry();
     String noteId = interpreterContext.getNoteId();
     // try get local object
-    AngularObject ao = registry.get(name, interpreterContext.getNoteId(), null);
+    AngularObject paragraphAo = registry.get(name, noteId, interpreterContext.getParagraphId());
+    AngularObject noteAo = registry.get(name, noteId, null);
+
+    AngularObject ao = paragraphAo != null ? paragraphAo : noteAo;
+
     if (ao == null) {
       // then global object
       ao = registry.get(name, null, null);
@@ -362,6 +407,7 @@ public class ZeppelinContext {
    * @param name variable name
    * @return value
    */
+  @ZeppelinApi
   public Object angular(String name) {
     AngularObject ao = getAngularObject(name, interpreterContext);
     if (ao == null) {
@@ -376,6 +422,7 @@ public class ZeppelinContext {
    * @param name variable name
    * @return value
    */
+  @Deprecated
   public Object angularGlobal(String name) {
     AngularObjectRegistry registry = interpreterContext.getAngularObjectRegistry();
     AngularObject ao = registry.get(name, null, null);
@@ -392,6 +439,7 @@ public class ZeppelinContext {
    * @param name name of the variable
    * @param o value
    */
+  @ZeppelinApi
   public void angularBind(String name, Object o) {
     angularBind(name, o, interpreterContext.getNoteId());
   }
@@ -402,6 +450,7 @@ public class ZeppelinContext {
    * @param name name of the variable
    * @param o value
    */
+  @Deprecated
   public void angularBindGlobal(String name, Object o) {
     angularBind(name, o, (String) null);
   }
@@ -413,6 +462,7 @@ public class ZeppelinContext {
    * @param o value
    * @param watcher watcher of the variable
    */
+  @ZeppelinApi
   public void angularBind(String name, Object o, AngularObjectWatcher watcher) {
     angularBind(name, o, interpreterContext.getNoteId(), watcher);
   }
@@ -424,6 +474,7 @@ public class ZeppelinContext {
    * @param o value
    * @param watcher watcher of the variable
    */
+  @Deprecated
   public void angularBindGlobal(String name, Object o, AngularObjectWatcher watcher) {
     angularBind(name, o, null, watcher);
   }
@@ -433,6 +484,7 @@ public class ZeppelinContext {
    * @param name name of the variable
    * @param watcher watcher
    */
+  @ZeppelinApi
   public void angularWatch(String name, AngularObjectWatcher watcher) {
     angularWatch(name, interpreterContext.getNoteId(), watcher);
   }
@@ -442,27 +494,31 @@ public class ZeppelinContext {
    * @param name name of the variable
    * @param watcher watcher
    */
+  @Deprecated
   public void angularWatchGlobal(String name, AngularObjectWatcher watcher) {
     angularWatch(name, null, watcher);
   }
 
-
+  @ZeppelinApi
   public void angularWatch(String name,
       final scala.Function2<Object, Object, Unit> func) {
     angularWatch(name, interpreterContext.getNoteId(), func);
   }
 
+  @Deprecated
   public void angularWatchGlobal(String name,
       final scala.Function2<Object, Object, Unit> func) {
     angularWatch(name, null, func);
   }
 
+  @ZeppelinApi
   public void angularWatch(
       String name,
       final scala.Function3<Object, Object, InterpreterContext, Unit> func) {
     angularWatch(name, interpreterContext.getNoteId(), func);
   }
 
+  @Deprecated
   public void angularWatchGlobal(
       String name,
       final scala.Function3<Object, Object, InterpreterContext, Unit> func) {
@@ -474,6 +530,7 @@ public class ZeppelinContext {
    * @param name
    * @param watcher
    */
+  @ZeppelinApi
   public void angularUnwatch(String name, AngularObjectWatcher watcher) {
     angularUnwatch(name, interpreterContext.getNoteId(), watcher);
   }
@@ -483,6 +540,7 @@ public class ZeppelinContext {
    * @param name
    * @param watcher
    */
+  @Deprecated
   public void angularUnwatchGlobal(String name, AngularObjectWatcher watcher) {
     angularUnwatch(name, null, watcher);
   }
@@ -492,6 +550,7 @@ public class ZeppelinContext {
    * Remove all watchers for the angular variable (local)
    * @param name
    */
+  @ZeppelinApi
   public void angularUnwatch(String name) {
     angularUnwatch(name, interpreterContext.getNoteId());
   }
@@ -500,6 +559,7 @@ public class ZeppelinContext {
    * Remove all watchers for the angular variable (global)
    * @param name
    */
+  @Deprecated
   public void angularUnwatchGlobal(String name) {
     angularUnwatch(name, (String) null);
   }
@@ -508,6 +568,7 @@ public class ZeppelinContext {
    * Remove angular variable and all the watchers.
    * @param name
    */
+  @ZeppelinApi
   public void angularUnbind(String name) {
     String noteId = interpreterContext.getNoteId();
     angularUnbind(name, noteId);
@@ -517,6 +578,7 @@ public class ZeppelinContext {
    * Remove angular variable and all the watchers.
    * @param name
    */
+  @Deprecated
   public void angularUnbindGlobal(String name) {
     angularUnbind(name, null);
   }
@@ -634,6 +696,7 @@ public class ZeppelinContext {
    * @param name
    * @param value
    */
+  @ZeppelinApi
   public void put(String name, Object value) {
     ResourcePool resourcePool = interpreterContext.getResourcePool();
     resourcePool.put(name, value);
@@ -645,6 +708,7 @@ public class ZeppelinContext {
    * @param name
    * @return null if resource not found
    */
+  @ZeppelinApi
   public Object get(String name) {
     ResourcePool resourcePool = interpreterContext.getResourcePool();
     Resource resource = resourcePool.get(name);
@@ -659,6 +723,7 @@ public class ZeppelinContext {
    * Remove object from resourcePool
    * @param name
    */
+  @ZeppelinApi
   public void remove(String name) {
     ResourcePool resourcePool = interpreterContext.getResourcePool();
     resourcePool.remove(name);
@@ -669,6 +734,7 @@ public class ZeppelinContext {
    * @param name
    * @return
    */
+  @ZeppelinApi
   public boolean containsKey(String name) {
     ResourcePool resourcePool = interpreterContext.getResourcePool();
     Resource resource = resourcePool.get(name);
@@ -678,6 +744,7 @@ public class ZeppelinContext {
   /**
    * Get all resources
    */
+  @ZeppelinApi
   public ResourceSet getAll() {
     ResourcePool resourcePool = interpreterContext.getResourcePool();
     return resourcePool.getAll();

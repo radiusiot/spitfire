@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Properties;
 
+import org.apache.spark.HttpServer;
+import org.apache.spark.SecurityManager;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.zeppelin.display.AngularObjectRegistry;
@@ -42,10 +44,10 @@ import org.slf4j.LoggerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SparkInterpreterTest {
   public static SparkInterpreter repl;
+  public static InterpreterGroup intpGroup;
   private InterpreterContext context;
   private File tmpDir;
   public static Logger LOGGER = LoggerFactory.getLogger(SparkInterpreterTest.class);
-
 
   /**
    * Get spark version number as a numerical value.
@@ -61,6 +63,16 @@ public class SparkInterpreterTest {
     return version;
   }
 
+  public static Properties getSparkTestProperties() {
+    Properties p = new Properties();
+    p.setProperty("master", "local[*]");
+    p.setProperty("spark.app.name", "Zeppelin Test");
+    p.setProperty("zeppelin.spark.useHiveContext", "true");
+    p.setProperty("zeppelin.spark.maxResult", "1000");
+
+    return p;
+  }
+
   @Before
   public void setUp() throws Exception {
     tmpDir = new File(System.getProperty("java.io.tmpdir") + "/ZeppelinLTest_" + System.currentTimeMillis());
@@ -69,13 +81,14 @@ public class SparkInterpreterTest {
     tmpDir.mkdirs();
 
     if (repl == null) {
-      Properties p = new Properties();
-
-      repl = new SparkInterpreter(p);
+      intpGroup = new InterpreterGroup();
+      intpGroup.put("note", new LinkedList<Interpreter>());
+      repl = new SparkInterpreter(getSparkTestProperties());
+      repl.setInterpreterGroup(intpGroup);
+      intpGroup.get("note").add(repl);
       repl.open();
     }
 
-    InterpreterGroup intpGroup = new InterpreterGroup();
     context = new InterpreterContext("note", "id", "title", "text",
         new AuthenticationInfo(),
         new HashMap<String, Object>(),
@@ -138,6 +151,17 @@ public class SparkInterpreterTest {
   }
 
   @Test
+  public void testNextLineComments() {
+    assertEquals(InterpreterResult.Code.SUCCESS, repl.interpret("\"123\"\n/*comment here\n*/.toInt", context).code());
+  }
+
+  @Test
+  public void testNextLineCompanionObject() {
+    String code = "class Counter {\nvar value: Long = 0\n}\n // comment\n\n object Counter {\n def apply(x: Long) = new Counter()\n}";
+    assertEquals(InterpreterResult.Code.SUCCESS, repl.interpret(code, context).code());
+  }
+
+  @Test
   public void testEndWithComment() {
     assertEquals(InterpreterResult.Code.SUCCESS, repl.interpret("val c=1\n//comment", context).code());
   }
@@ -187,5 +211,21 @@ public class SparkInterpreterTest {
         assertTrue(String.format("configuration starting from 'spark.' should not be empty. [%s]", key), !sparkConf.contains(key) || !sparkConf.get(key).isEmpty());
       }
     }
+  }
+
+  @Test
+  public void shareSingleSparkContext() throws InterruptedException {
+    // create another SparkInterpreter
+    SparkInterpreter repl2 = new SparkInterpreter(getSparkTestProperties());
+    repl2.setInterpreterGroup(intpGroup);
+    intpGroup.get("note").add(repl2);
+    repl2.open();
+
+    assertEquals(Code.SUCCESS,
+        repl.interpret("print(sc.parallelize(1 to 10).count())", context).code());
+    assertEquals(Code.SUCCESS,
+        repl2.interpret("print(sc.parallelize(1 to 10).count())", context).code());
+
+    repl2.close();
   }
 }

@@ -43,6 +43,18 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
 
   var connectedOnce = false;
 
+  // user auto complete related
+  $scope.suggestions = [];
+  $scope.selectIndex = -1;
+  var selectedUser = '';
+  var selectedUserIndex = 0;
+  var previousSelectedList = [];
+  var previousSelectedListOwners = [];
+  var previousSelectedListReaders = [];
+  var previousSelectedListWriters = [];
+  var searchText = [];
+  $scope.role = '';
+
   $scope.$on('setConnectedStatus', function(event, param) {
     if(connectedOnce && param){
       initNotebook();
@@ -295,6 +307,12 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
     $scope.setConfig();
   };
 
+  /** Set the username of the user to be used to execute all notes in notebook **/
+  $scope.setCronExecutingUser = function(cronExecutingUser) {
+    $scope.note.config.cronExecutingUser = cronExecutingUser;
+    $scope.setConfig();
+  };
+
   /** Set release resource for this note **/
   $scope.setReleaseResource = function(value) {
     $scope.note.config.releaseresource = value;
@@ -488,7 +506,9 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
           paragraphToBeFocused = note.paragraphs[index].id;
           break;
         }
-        $scope.$broadcast('updateParagraph', {paragraph: note.paragraphs[index]});
+        $scope.$broadcast('updateParagraph', {
+          note: $scope.note, // pass the note object to paragraph scope
+          paragraph: note.paragraphs[index]});
       }
     }
 
@@ -497,7 +517,9 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
       for (var idx in newParagraphIds) {
         var newEntry = note.paragraphs[idx];
         if (oldParagraphIds[idx] === newParagraphIds[idx]) {
-          $scope.$broadcast('updateParagraph', {paragraph: newEntry});
+          $scope.$broadcast('updateParagraph', {
+            note: $scope.note, // pass the note object to paragraph scope
+            paragraph: newEntry});
         } else {
           // move paragraph
           var oldIdx = oldParagraphIds.indexOf(newParagraphIds[idx]);
@@ -632,6 +654,108 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
     }
   };
 
+  var getPermissions = function(callback) {
+    $http.get(baseUrlSrv.getRestApiBase()+ '/notebook/' +$scope.note.id + '/permissions').
+    success(function(data, status, headers, config) {
+      $scope.permissions = data.body;
+      $scope.permissionsOrig = angular.copy($scope.permissions); // to check dirty
+      if (callback) {
+        callback();
+      }
+    }).
+    error(function(data, status, headers, config) {
+      if (status !== 0) {
+        console.log('Error %o %o', status, data.message);
+      }
+    });
+  };
+
+  $scope.openPermissions = function() {
+    $scope.showPermissions = true;
+    getPermissions();
+  };
+
+
+  $scope.closePermissions = function() {
+    if (isPermissionsDirty()) {
+      BootstrapDialog.confirm({
+        closable: true,
+        title: '',
+        message: 'Changes will be discarded.',
+        callback: function(result) {
+          if (result) {
+            $scope.$apply(function() {
+              $scope.showPermissions = false;
+            });
+          }
+        }
+      });
+    } else {
+      $scope.showPermissions = false;
+    }
+  };
+
+  function convertPermissionsToArray() {
+    if (!angular.isArray($scope.permissions.owners)) {
+      $scope.permissions.owners = $scope.permissions.owners.split(',');
+    }
+    if (!angular.isArray($scope.permissions.readers)) {
+      $scope.permissions.readers = $scope.permissions.readers.split(',');
+    }
+    if (!angular.isArray($scope.permissions.writers)) {
+      $scope.permissions.writers = $scope.permissions.writers.split(',');
+    }
+  }
+
+  $scope.savePermissions = function () {
+    convertPermissionsToArray();
+    $http.put(baseUrlSrv.getRestApiBase() + '/notebook/' + $scope.note.id + '/permissions',
+      $scope.permissions, {withCredentials: true}).
+      success(function (data, status, headers, config) {
+        console.log('Note permissions %o saved', $scope.permissions);
+        BootstrapDialog.alert({
+          closable: true,
+          title: 'Permissions Saved Successfully!!!',
+          message: 'Owners : ' + $scope.permissions.owners + '\n\n' + 'Readers : ' + $scope.permissions.readers + '\n\n' + 'Writers  : ' + $scope.permissions.writers
+        });
+        $scope.showPermissions = false;
+      }).
+      error(function (data, status, headers, config) {
+        console.log('Error %o %o', status, data.message);
+        BootstrapDialog.show({
+          closable: true,
+          title: 'Insufficient privileges',
+          message: data.message,
+          buttons: [
+            {
+              label: 'Login',
+              action: function (dialog) {
+                dialog.close();
+                angular.element('#loginModal').modal({
+                  show: 'true'
+                });
+              }
+            },
+            {
+              label: 'Cancel',
+              action: function (dialog) {
+                dialog.close();
+              }
+            }
+          ]
+        });
+      });
+    };
+
+  $scope.togglePermissions = function() {
+    if ($scope.showPermissions) {
+      $scope.closePermissions();
+    } else {
+      $scope.openPermissions();
+    }
+  };
+
+
   var isSettingDirty = function() {
     if (angular.equals($scope.interpreterBindings, $scope.interpreterBindingsOrig)) {
       return false;
@@ -639,4 +763,192 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
       return true;
     }
   };
+
+  var isPermissionsDirty = function() {
+    if (angular.equals($scope.permissions, $scope.permissionsOrig)) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
+  function checkPreviousRole(role) {
+    var i = 0;
+    if (role !== $scope.role) {
+      if ($scope.role === 'owners') {
+        previousSelectedListOwners = [];
+        for (i = 0; i < previousSelectedList.length; i++) {
+          previousSelectedListOwners[i] = previousSelectedList[i];
+        }
+      }
+      if ($scope.role === 'readers') {
+        previousSelectedListReaders = [];
+        for (i = 0; i < previousSelectedList.length; i++) {
+          previousSelectedListReaders[i] = previousSelectedList[i];
+        }
+      }
+      if ($scope.role === 'writers') {
+        previousSelectedListWriters = [];
+        for (i = 0; i < previousSelectedList.length; i++) {
+          previousSelectedListWriters[i] = previousSelectedList[i];
+        }
+      }
+
+      $scope.role = role;
+      previousSelectedList = [];
+      if (role === 'owners') {
+        for (i = 0; i < previousSelectedListOwners.length; i++) {
+          previousSelectedList[i] = previousSelectedListOwners[i];
+        }
+      }
+      if (role === 'readers') {
+        for (i = 0; i < previousSelectedListReaders.length; i++) {
+          previousSelectedList[i] = previousSelectedListReaders[i];
+        }
+      }
+      if (role === 'writers') {
+        for (i = 0; i < previousSelectedListWriters.length; i++) {
+          previousSelectedList[i] = previousSelectedListWriters[i];
+        }
+      }
+    }
+  }
+
+
+  function convertToArray(role) {
+    if (role === 'owners') {
+      searchText = $scope.permissions.owners.split(',');
+    }
+    else if (role === 'readers') {
+      searchText = $scope.permissions.readers.split(',');
+    }
+    else if (role === 'writers') {
+      searchText = $scope.permissions.writers.split(',');
+    }
+    for (var i = 0; i < searchText.length; i++) {
+      searchText[i] = searchText[i].trim();
+    }
+  }
+
+
+  function convertToString(role) {
+    if (role === 'owners') {
+      $scope.permissions.owners = searchText.join();
+    }
+    else if (role === 'readers') {
+      $scope.permissions.readers = searchText.join();
+    }
+    else if (role === 'writers') {
+      $scope.permissions.writers = searchText.join();
+    }
+  }
+
+  function getSuggestions (searchQuery) {
+    $scope.suggestions =[];
+    $http.get(baseUrlSrv.getRestApiBase() + '/security/userlist/' + searchQuery ).then(function
+    (response) {
+      var userlist = angular.fromJson(response.data).body;
+      for (var k in userlist) {
+        $scope.suggestions.push(userlist[k]);
+      }
+    });
+  }
+
+  function updatePreviousList() {
+    for (var i = 0; i < searchText.length; i++) {
+      previousSelectedList[i] = searchText[i];
+    }
+  }
+
+
+  var getChangedIndex = function() {
+    if (previousSelectedList.length === 0) {
+      selectedUserIndex = searchText.length - 1;
+    }
+    else {
+      for (var i = 0; i < searchText.length; i++) {
+        if (previousSelectedList[i] !== searchText[i]) {
+          selectedUserIndex = i;
+          previousSelectedList = [];
+          break;
+        }
+      }
+    }
+    updatePreviousList();
+  };
+
+  // function to find suggestion list on change
+  $scope.search = function(role) {
+    convertToArray(role);
+    checkPreviousRole(role);
+    getChangedIndex();
+    $scope.selectIndex = -1;
+    $scope.suggestions = [];
+    selectedUser = searchText[selectedUserIndex];
+    if(selectedUser !== ''){
+    getSuggestions(selectedUser);
+    }
+    else
+    {
+     $scope.suggestions = [];
+    }
+  };
+
+
+  var checkIfSelected = function() {
+    if (($scope.suggestions.length === 0) && ($scope.selectIndex < 0 || $scope.selectIndex >= $scope.suggestions.length) || ( $scope.suggestions.length !== 0 && ( $scope.selectIndex < 0 || $scope.selectIndex >= $scope.suggestions.length   ))) {
+      searchText[selectedUserIndex] = selectedUser;
+      $scope.suggestions = [];
+      return true;
+    }
+    else {
+      return false;
+    }
+  };
+
+
+  $scope.checkKeyDown = function(event, role) {
+    if (event.keyCode === 40) {
+      event.preventDefault();
+      if ($scope.selectIndex + 1 !== $scope.suggestions.length) {
+        $scope.selectIndex++;
+      }
+    }
+    else if (event.keyCode === 38) {
+      event.preventDefault();
+
+      if ($scope.selectIndex - 1 !== -1) {
+        $scope.selectIndex--;
+
+      }
+    }
+    else if (event.keyCode === 13) {
+      event.preventDefault();
+      if (!checkIfSelected()) {
+        selectedUser = $scope.suggestions[$scope.selectIndex];
+        searchText[selectedUserIndex] = $scope.suggestions[$scope.selectIndex];
+        updatePreviousList();
+        convertToString(role);
+        $scope.suggestions = [];
+      }
+    }
+  };
+
+  $scope.checkKeyUp = function(event) {
+    if (event.keyCode !== 8 || event.keyCode !== 46) {
+      if (searchText[selectedUserIndex] === '') {
+        $scope.suggestions = [];
+      }
+    }
+  };
+
+
+  $scope.assignValueAndHide = function(index, role) {
+    searchText[selectedUserIndex] = $scope.suggestions[index];
+    updatePreviousList();
+    convertToString(role);
+    $scope.suggestions = [];
+  };
+
+
 });

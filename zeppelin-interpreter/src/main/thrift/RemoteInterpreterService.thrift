@@ -47,7 +47,8 @@ enum RemoteInterpreterEventType {
   RESOURCE_POOL_GET_ALL = 6,
   RESOURCE_GET = 7
   OUTPUT_APPEND = 8,
-  OUTPUT_UPDATE = 9
+  OUTPUT_UPDATE = 9,
+  ANGULAR_REGISTRY_PUSH=10
 }
 
 struct RemoteInterpreterEvent {
@@ -56,18 +57,18 @@ struct RemoteInterpreterEvent {
 }
 
 service RemoteInterpreterService {
-  void createInterpreter(1: string intpGroupId, 2: string className, 3: map<string, string> properties);
+  void createInterpreter(1: string intpGroupId, 2: string noteId, 3: string className, 4: map<string, string> properties);
 
-  void open(1: string className);
-  void close(1: string className);
-  RemoteInterpreterResult interpret(1: string className, 2: string st, 3: RemoteInterpreterContext interpreterContext);
-  void cancel(1: string className, 2: RemoteInterpreterContext interpreterContext);
-  i32 getProgress(1: string className, 2: RemoteInterpreterContext interpreterContext);
-  string getFormType(1: string className);
-  list<string> completion(1: string className, 2: string buf, 3: i32 cursor);
+  void open(1: string noteId, 2: string className);
+  void close(1: string noteId, 2: string className);
+  RemoteInterpreterResult interpret(1: string noteId, 2: string className, 3: string st, 4: RemoteInterpreterContext interpreterContext);
+  void cancel(1: string noteId, 2: string className, 3: RemoteInterpreterContext interpreterContext);
+  i32 getProgress(1: string noteId, 2: string className, 3: RemoteInterpreterContext interpreterContext);
+  string getFormType(1: string noteId, 2: string className);
+  list<string> completion(1: string noteId, 2: string className, 3: string buf, 4: i32 cursor);
   void shutdown();
 
-  string getStatus(1:string jobId);
+  string getStatus(1: string noteId, 2:string jobId);
 
   RemoteInterpreterEvent getEvent();
 
@@ -76,12 +77,15 @@ service RemoteInterpreterService {
   // as a response, ZeppelinServer send serialized value of resource
   void resourceResponseGet(1: string resourceId, 2: binary object);
   // get all resources in the interpreter process
-  list<string> resoucePoolGetAll();
+  list<string> resourcePoolGetAll();
   // get value of resource
-  binary resourceGet(1: string resourceName);
+  binary resourceGet(1: string noteId, 2: string paragraphId, 3: string resourceName);
+  // remove resource
+  bool resourceRemove(1: string noteId, 2: string paragraphId, 3:string resourceName);
 
   void angularObjectUpdate(1: string name, 2: string noteId, 3: string paragraphId, 4: string
   object);
   void angularObjectAdd(1: string name, 2: string noteId, 3: string paragraphId, 4: string object);
   void angularObjectRemove(1: string name, 2: string noteId, 3: string paragraphId);
+  void angularRegistryPush(1: string registry);
 }
