@@ -579,8 +579,8 @@ public class InterpreterFactory implements InterpreterGroupFactory {
 
       } else {
         interpreterSetting =
-            new InterpreterSetting(group, null, interpreterInfos, properties, dependencies,
-                option, path);
+            new InterpreterSetting(group, null, interpreterInfos, properties, dependencies, option,
+                path);
         interpreterSettingsRef.put(group, interpreterSetting);
       }
     }
@@ -1044,7 +1044,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
     }
   }
 
-  private String getInterpreterInstanceKey(String noteId, InterpreterSetting setting) {
+  private String getInterpreterInstanceKey(String user, String noteId, InterpreterSetting setting) {
     if (setting.getOption().isExistingProcess()) {
       return Constants.EXISTING_PROCESS;
     } else if (setting.getOption().isPerNoteSession() || setting.getOption().isPerNoteProcess()) {
@@ -1054,14 +1054,15 @@ public class InterpreterFactory implements InterpreterGroupFactory {
     }
   }
 
-  private List<Interpreter> createOrGetInterpreterList(String noteId, InterpreterSetting setting) {
+  private List<Interpreter> createOrGetInterpreterList(String user, String noteId,
+      InterpreterSetting setting) {
     InterpreterGroup interpreterGroup = setting.getInterpreterGroup(noteId);
     synchronized (interpreterGroup) {
-      String key = getInterpreterInstanceKey(noteId, setting);
+      String key = getInterpreterInstanceKey(user, noteId, setting);
       if (!interpreterGroup.containsKey(key)) {
         createInterpretersForNote(setting, noteId, key);
       }
-      return interpreterGroup.get(getInterpreterInstanceKey(noteId, setting));
+      return interpreterGroup.get(getInterpreterInstanceKey(user, noteId, setting));
     }
   }
 
@@ -1102,14 +1103,15 @@ public class InterpreterFactory implements InterpreterGroupFactory {
     return null;
   }
 
-  private Interpreter getInterpreter(String noteId, InterpreterSetting setting, String name) {
+  private Interpreter getInterpreter(String user, String noteId, InterpreterSetting setting,
+      String name) {
     Preconditions.checkNotNull(noteId, "noteId should be not null");
     Preconditions.checkNotNull(setting, "setting should be not null");
     Preconditions.checkNotNull(name, "name should be not null");
 
     String className;
     if (null != (className = getInterpreterClassFromInterpreterSetting(setting, name))) {
-      List<Interpreter> interpreterGroup = createOrGetInterpreterList(noteId, setting);
+      List<Interpreter> interpreterGroup = createOrGetInterpreterList(user, noteId, setting);
       for (Interpreter interpreter : interpreterGroup) {
         if (className.equals(interpreter.getClassName())) {
           return interpreter;
@@ -1119,7 +1121,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
     return null;
   }
 
-  public Interpreter getInterpreter(String noteId, String replName) {
+  public Interpreter getInterpreter(String user, String noteId, String replName) {
     List<InterpreterSetting> settings = getInterpreterSettings(noteId);
     InterpreterSetting setting;
     Interpreter interpreter;
@@ -1132,7 +1134,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
       // get default settings (first available)
       // TODO(jl): Fix it in case of returning null
       InterpreterSetting defaultSettings = getDefaultInterpreterSetting(settings);
-      return createOrGetInterpreterList(noteId, defaultSettings).get(0);
+      return createOrGetInterpreterList(user, noteId, defaultSettings).get(0);
     }
 
     String[] replNameSplit = replName.split("\\.");
@@ -1145,7 +1147,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
       setting = getInterpreterSettingByGroup(settings, group);
 
       if (null != setting) {
-        interpreter = getInterpreter(noteId, setting, name);
+        interpreter = getInterpreter(user, noteId, setting, name);
 
         if (null != interpreter) {
           return interpreter;
@@ -1160,7 +1162,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
       // TODO(jl): Handle with noteId to support defaultInterpreter per note.
       setting = getDefaultInterpreterSetting(settings);
 
-      interpreter = getInterpreter(noteId, setting, replName);
+      interpreter = getInterpreter(user, noteId, setting, replName);
 
       if (null != interpreter) {
         return interpreter;
@@ -1171,7 +1173,7 @@ public class InterpreterFactory implements InterpreterGroupFactory {
       setting = getInterpreterSettingByGroup(settings, replName);
 
       if (null != setting) {
-        List<Interpreter> interpreters = createOrGetInterpreterList(noteId, setting);
+        List<Interpreter> interpreters = createOrGetInterpreterList(user, noteId, setting);
         if (null != interpreters) {
           return interpreters.get(0);
         }

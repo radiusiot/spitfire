@@ -447,7 +447,8 @@ public class Note implements Serializable, ParagraphJobListener {
         p.setAuthenticationInfo(authenticationInfo);
 
         p.setListener(jobListenerFactory.getParagraphJobListener(this));
-        Interpreter intp = factory.getInterpreter(getId(), p.getRequiredReplName());
+        Interpreter intp =
+            factory.getInterpreter(cronExecutingUser, getId(), p.getRequiredReplName());
 
         intp.getScheduler().submit(p);
       }
@@ -463,11 +464,11 @@ public class Note implements Serializable, ParagraphJobListener {
     Paragraph p = getParagraph(paragraphId);
     p.setListener(jobListenerFactory.getParagraphJobListener(this));
     String requiredReplName = p.getRequiredReplName();
-    Interpreter intp = factory.getInterpreter(getId(), requiredReplName);
+    Interpreter intp = factory.getInterpreter(p.getUser(), getId(), requiredReplName);
 
     if (intp == null) {
       // TODO(jongyoul): Make "%jdbc" configurable from JdbcInterpreter
-      if (conf.getUseJdbcAlias() && null != (intp = factory.getInterpreter(getId(), "jdbc"))) {
+      if (conf.getUseJdbcAlias() && null != (intp = factory.getInterpreter(p.getUser(), getId(), "jdbc"))) {
         String pText = p.getText().replaceFirst(requiredReplName, "jdbc(" + requiredReplName + ")");
         logger.debug("New paragraph: {}", pText);
         p.setEffectiveText(pText);
