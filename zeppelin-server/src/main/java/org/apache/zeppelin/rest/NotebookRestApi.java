@@ -567,6 +567,11 @@ public class NotebookRestApi {
       }
     }
 
+    AuthenticationInfo subject = new AuthenticationInfo(SecurityUtils.getPrincipal());
+
+    paragraph.setAuthenticationInfo(subject);
+    note.persist(subject);
+
     note.run(paragraph.getId());
     return new JsonResponse<>(Status.OK).build();
   }
