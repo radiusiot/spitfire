@@ -31,6 +31,8 @@ import org.apache.zeppelin.dep.Dependency;
 import org.apache.zeppelin.dep.DependencyResolver;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter1;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter2;
+import org.apache.zeppelin.notebook.repo.zeppelinhub.security.Authentication;
+import org.apache.zeppelin.user.AuthenticationInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -81,8 +83,8 @@ public class InterpreterFactoryTest {
 
 //    mock1Setting = factory.createNewSetting("mock11", "mock1", new ArrayList<Dependency>(), new InterpreterOption(false), new Properties());
 
-    InterpreterGroup interpreterGroup = mock1Setting.getInterpreterGroup("sharedProcess");
-    factory.createInterpretersForNote(mock1Setting, "sharedProcess", "session");
+    InterpreterGroup interpreterGroup = mock1Setting.getInterpreterGroup("user", "sharedProcess");
+    factory.createInterpretersForNote(mock1Setting, "user", "sharedProcess", "session");
 
     // get interpreter
     assertNotNull("get Interpreter", interpreterGroup.get("session").get(0));
@@ -92,7 +94,7 @@ public class InterpreterFactoryTest {
 
     // restart interpreter
     factory.restart(mock1Setting.getId());
-    assertNull(mock1Setting.getInterpreterGroup("sharedProcess").get("session"));
+    assertNull(mock1Setting.getInterpreterGroup("user", "sharedProcess").get("session"));
   }
 
   @Test
@@ -149,11 +151,32 @@ public class InterpreterFactoryTest {
     final InterpreterSetting setting1 = factory.createNewSetting("test-group1", "group1", new ArrayList<Dependency>(), new InterpreterOption(true), new Properties());
     final InterpreterSetting setting2 = factory.createNewSetting("test-group2", "group1", new ArrayList<Dependency>(), new InterpreterOption(true), new Properties());
 
-    factory.setInterpreters("note", new ArrayList<String>() {{
+    factory.setInterpreters("user", "note", new ArrayList<String>() {{
       add(setting1.getId());
       add(setting2.getId());
     }});
 
     assertEquals("className1", factory.getInterpreter("user1", "note", "test-group1").getClassName());
+  }
+
+  @Test
+  public void testMultiUser() throws IOException, RepositoryException {
+    factory = new InterpreterFactory(conf, null, null, null, depResolver);
+    final InterpreterInfo info1 = new InterpreterInfo("className1", "name1", true);
+    factory.add("group1", new ArrayList<InterpreterInfo>(){{
+      add(info1);
+    }}, new ArrayList<Dependency>(), new InterpreterOption(true), new Properties(), "/path1");
+
+    final InterpreterSetting setting1 = factory.createNewSetting("test-group1", "group1", new ArrayList<Dependency>(), new InterpreterOption(true), new Properties());
+
+    factory.setInterpreters("user1", "note", new ArrayList<String>() {{
+      add(setting1.getId());
+    }});
+
+    factory.setInterpreters("user2", "note", new ArrayList<String>() {{
+      add(setting1.getId());
+    }});
+
+    assertNotEquals(factory.getInterpreter("user1", "note", "test-group1"), factory.getInterpreter("user2", "note", "test-group1"));
   }
 }

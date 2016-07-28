@@ -455,8 +455,8 @@ public class Paragraph extends Job implements Serializable, Cloneable {
 
     if (!factory.getInterpreterSettings(note.getId()).isEmpty()) {
       InterpreterSetting intpGroup = factory.getInterpreterSettings(note.getId()).get(0);
-      registry = intpGroup.getInterpreterGroup(note.id()).getAngularObjectRegistry();
-      resourcePool = intpGroup.getInterpreterGroup(note.id()).getResourcePool();
+      registry = intpGroup.getInterpreterGroup(getUser(), note.id()).getAngularObjectRegistry();
+      resourcePool = intpGroup.getInterpreterGroup(getUser(), note.id()).getResourcePool();
     }
 
     List<InterpreterContextRunner> runners = new LinkedList<InterpreterContextRunner>();
