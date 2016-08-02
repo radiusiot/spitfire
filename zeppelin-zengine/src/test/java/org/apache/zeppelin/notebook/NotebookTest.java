@@ -635,7 +635,7 @@ public class NotebookTest implements JobListenerFactory{
 
     // restart interpreter with per note session enabled
     for (InterpreterSetting setting : factory.getInterpreterSettings(note1.getId())) {
-      setting.getOption().setPerNoteSession(true);
+      setting.getOption().setSession(true);
       notebook.getInterpreterFactory().restart(setting.getId());
     }
 
@@ -680,7 +680,7 @@ public class NotebookTest implements JobListenerFactory{
 
     // restart interpreter with per note session enabled
     for (InterpreterSetting setting : notebook.getInterpreterFactory().getInterpreterSettings(note1.getId())) {
-      setting.getOption().setPerNoteSession(true);
+      setting.getOption().setSession(true);
       notebook.getInterpreterFactory().restart(setting.getId());
     }
 
@@ -707,7 +707,7 @@ public class NotebookTest implements JobListenerFactory{
 
     // restart interpreter with per note session enabled
     for (InterpreterSetting setting : factory.getInterpreterSettings(note1.getId())) {
-      setting.getOption().setPerNoteSession(true);
+      setting.getOption().setSession(true);
       notebook.getInterpreterFactory().restart(setting.getId());
     }
 

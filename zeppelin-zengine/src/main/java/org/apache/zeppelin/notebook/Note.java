@@ -454,6 +454,7 @@ public class Note implements Serializable, ParagraphJobListener {
         Interpreter intp =
             factory.getInterpreter(cronExecutingUser, getId(), p.getRequiredReplName());
 
+        p.setAuthenticationInfo(p.getAuthenticationInfo());
         intp.getScheduler().submit(p);
       }
     }
@@ -482,6 +483,7 @@ public class Note implements Serializable, ParagraphJobListener {
       }
     }
     if (p.getConfig().get("enabled") == null || (Boolean) p.getConfig().get("enabled")) {
+      p.setAuthenticationInfo(p.getAuthenticationInfo());
       intp.getScheduler().submit(p);
     }
   }
