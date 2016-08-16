@@ -155,14 +155,14 @@ angular.module('zeppelinWebApp').controller('InterpreterCtrl',
       }
 
       if (sessionOption === 'isolated') {
-        option.perNoteSession = false;
-        option.perNoteProcess = true;
+        option.session = false;
+        option.process = true;
       } else if (sessionOption === 'scoped') {
-        option.perNoteSession = true;
-        option.perNoteProcess = false;
+        option.session = true;
+        option.process = false;
       } else {
-        option.perNoteSession = false;
-        option.perNoteProcess = false;
+        option.session = false;
+        option.process = false;
       }
     };
 
@@ -175,9 +175,9 @@ angular.module('zeppelinWebApp').controller('InterpreterCtrl',
         var setting = $scope.interpreterSettings[index];
         option = setting.option;
       }
-      if (option.perNoteSession) {
+      if (option.session) {
         return 'scoped';
-      } else if (option.perNoteProcess) {
+      } else if (option.process) {
         return 'isolated';
       } else {
         return 'shared';
@@ -382,8 +382,8 @@ angular.module('zeppelinWebApp').controller('InterpreterCtrl',
           remote: true,
           isExistingProcess: false,
           setPermission: false,
-          perNoteSession: false,
-          perNoteProcess: false
+          session: false,
+          process: false
 
         }
       };
