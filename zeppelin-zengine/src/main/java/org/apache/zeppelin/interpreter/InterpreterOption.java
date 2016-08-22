@@ -26,12 +26,32 @@ public class InterpreterOption {
   boolean remote;
   String host = null;
   int port = -1;
-  boolean perNoteSession;
-  boolean perNoteProcess;
+
+  boolean perNote;
+  boolean perUser;
+
+  boolean session;
+  boolean process;
   
   boolean isExistingProcess;
   boolean setPermission;
   List<String> users;
+
+  public boolean isPerNote() {
+    return perNote;
+  }
+
+  public void setPerNote(boolean perNote) {
+    this.perNote = perNote;
+  }
+
+  public boolean isPerUser() {
+    return perUser;
+  }
+
+  public void setPerUser(boolean perUser) {
+    this.perUser = perUser;
+  }
 
   public boolean isExistingProcess() {
     return isExistingProcess;
@@ -77,12 +97,12 @@ public class InterpreterOption {
     this.remote = remote;
   }
 
-  public boolean isPerNoteSession() {
-    return perNoteSession;
+  public boolean isSession() {
+    return session;
   }
 
-  public void setPerNoteSession(boolean perNoteSession) {
-    this.perNoteSession = perNoteSession;
+  public void setSession(boolean session) {
+    this.session = session;
   }
 
   public boolean isConnectExistingProcess() {
@@ -97,11 +117,11 @@ public class InterpreterOption {
     return port;
   }
 
-  public boolean isPerNoteProcess() {
-    return perNoteProcess;
+  public boolean isProcess() {
+    return process;
   }
 
-  public void setPerNoteProcess(boolean perNoteProcess) {
-    this.perNoteProcess = perNoteProcess;
+  public void setProcess(boolean process) {
+    this.process = process;
   }
 }

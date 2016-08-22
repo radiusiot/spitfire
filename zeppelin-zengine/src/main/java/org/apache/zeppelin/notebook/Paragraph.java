@@ -105,6 +105,10 @@ public class Paragraph extends Job implements Serializable, Cloneable {
            + new Random(System.currentTimeMillis()).nextInt();
   }
 
+  public String getUser() {
+    return user;
+  }
+
   public String getText() {
     return text;
   }
@@ -201,7 +205,7 @@ public class Paragraph extends Job implements Serializable, Cloneable {
   }
 
   public Interpreter getRepl(String name) {
-    return factory.getInterpreter(note.getId(), name);
+    return factory.getInterpreter(user, note.getId(), name);
   }
 
   public Interpreter getCurrentRepl() {
@@ -451,8 +455,8 @@ public class Paragraph extends Job implements Serializable, Cloneable {
 
     if (!factory.getInterpreterSettings(note.getId()).isEmpty()) {
       InterpreterSetting intpGroup = factory.getInterpreterSettings(note.getId()).get(0);
-      registry = intpGroup.getInterpreterGroup(note.id()).getAngularObjectRegistry();
-      resourcePool = intpGroup.getInterpreterGroup(note.id()).getResourcePool();
+      registry = intpGroup.getInterpreterGroup(getUser(), note.id()).getAngularObjectRegistry();
+      resourcePool = intpGroup.getInterpreterGroup(getUser(), note.id()).getResourcePool();
     }
 
     List<InterpreterContextRunner> runners = new LinkedList<InterpreterContextRunner>();

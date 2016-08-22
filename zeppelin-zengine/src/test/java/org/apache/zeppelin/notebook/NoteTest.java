@@ -26,6 +26,7 @@ import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.search.SearchService;
+import org.apache.zeppelin.user.AuthenticationInfo;
 import org.apache.zeppelin.user.Credentials;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,9 +64,11 @@ public class NoteTest {
   @Mock
   InterpreterFactory interpreterFactory;
 
+  private AuthenticationInfo anonymous = new AuthenticationInfo("anonymous");
+
   @Test
   public void runNormalTest() {
-    when(interpreterFactory.getInterpreter(anyString(), eq("spark"))).thenReturn(interpreter);
+    when(interpreterFactory.getInterpreter(anyString(), anyString(), eq("spark"))).thenReturn(interpreter);
     when(interpreter.getScheduler()).thenReturn(scheduler);
 
     String pText = "%spark sc.version";
@@ -73,19 +76,20 @@ public class NoteTest {
 
     Paragraph p = note.addParagraph();
     p.setText(pText);
+    p.setAuthenticationInfo(anonymous);
     note.run(p.getId());
 
     ArgumentCaptor<Paragraph> pCaptor = ArgumentCaptor.forClass(Paragraph.class);
     verify(scheduler, only()).submit(pCaptor.capture());
-    verify(interpreterFactory, only()).getInterpreter(anyString(), eq("spark"));
+    verify(interpreterFactory, only()).getInterpreter(anyString(), anyString(), eq("spark"));
 
     assertEquals("Paragraph text", pText, pCaptor.getValue().getText());
   }
 
   @Test
   public void runJdbcTest() {
-    when(interpreterFactory.getInterpreter(anyString(), eq("mysql"))).thenReturn(null);
-    when(interpreterFactory.getInterpreter(anyString(), eq("jdbc"))).thenReturn(interpreter);
+    when(interpreterFactory.getInterpreter(anyString(), anyString(), eq("mysql"))).thenReturn(null);
+    when(interpreterFactory.getInterpreter(anyString(), anyString(), eq("jdbc"))).thenReturn(interpreter);
     when(interpreter.getScheduler()).thenReturn(scheduler);
 
     String pText = "%mysql show databases";
@@ -93,11 +97,12 @@ public class NoteTest {
     Note note = new Note(repo, interpreterFactory, jobListenerFactory, index, credentials, noteEventListener);
     Paragraph p = note.addParagraph();
     p.setText(pText);
+    p.setAuthenticationInfo(anonymous);
     note.run(p.getId());
 
     ArgumentCaptor<Paragraph> pCaptor = ArgumentCaptor.forClass(Paragraph.class);
     verify(scheduler, only()).submit(pCaptor.capture());
-    verify(interpreterFactory, times(2)).getInterpreter(anyString(), anyString());
+    verify(interpreterFactory, times(2)).getInterpreter(anyString(), anyString(), anyString());
 
     assertEquals("Change paragraph text", "%jdbc(mysql) show databases", pCaptor.getValue().getEffectiveText());
     assertEquals("Change paragraph text", pText, pCaptor.getValue().getText());
