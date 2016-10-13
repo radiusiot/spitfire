@@ -227,4 +227,10 @@ public class AzureNotebookRepo implements NotebookRepo {
     // Auto-generated method stub
     return null;
   }
+
+  @Override
+  public MimeContent read(String noteId, String contentId) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
 }

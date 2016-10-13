@@ -17,10 +17,7 @@
 
 package org.apache.zeppelin.notebook.repo;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
@@ -283,6 +280,19 @@ public class VFSNotebookRepo implements NotebookRepo {
   public List<Revision> revisionHistory(String noteId, AuthenticationInfo subject) {
     // Auto-generated method stub
     return null;
+  }
+
+  @Override
+  public MimeContent read(String noteId, String contentId) throws IOException {
+    MimeContent mimeContent = new MimeContent();
+    String path = getPath(noteId  + "/" + contentId);
+    File file = new File(path);
+    mimeContent.file = file;
+    mimeContent.length = file.length();
+    mimeContent.is = new FileInputStream(file);
+    mimeContent.mimeType = MimeType.getContentType(file);
+//    mimeContent.bytes = FileUtil.getBytesFromFile(file);
+    return mimeContent;
   }
 
 }

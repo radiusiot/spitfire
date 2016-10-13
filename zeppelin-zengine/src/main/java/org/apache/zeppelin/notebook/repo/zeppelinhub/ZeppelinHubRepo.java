@@ -26,6 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.NoteInfo;
+import org.apache.zeppelin.notebook.repo.MimeContent;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.repo.zeppelinhub.rest.ZeppelinhubRestApiHandler;
 import org.apache.zeppelin.notebook.repo.zeppelinhub.websocket.Client;
@@ -232,6 +233,11 @@ public class ZeppelinHubRepo implements NotebookRepo {
       LOG.error("Cannot get note history", e);
     }
     return history;
+  }
+
+  @Override
+  public MimeContent read(String noteId, String contentId) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
 }

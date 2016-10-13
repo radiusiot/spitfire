@@ -412,4 +412,10 @@ public class NotebookRepoSync implements NotebookRepo {
     }
     return revisions;
   }
+
+  @Override
+  public MimeContent read(String noteId, String contentId) throws IOException {
+    return getRepo(0).read(noteId, contentId);
+  }
+
 }

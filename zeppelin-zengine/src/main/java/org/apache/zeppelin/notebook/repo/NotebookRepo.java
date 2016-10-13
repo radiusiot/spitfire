@@ -100,6 +100,8 @@ public interface NotebookRepo {
    */
   @ZeppelinApi public List<Revision> revisionHistory(String noteId, AuthenticationInfo subject);
 
+  MimeContent read(String noteId, String contentId) throws IOException;
+
   /**
    * Represents the 'Revision' a point in life of the notebook
    */
