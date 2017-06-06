@@ -40,6 +40,7 @@ public class Input<T> implements Serializable {
         .registerSubtype(TextBox.class, "TextBox")
         .registerSubtype(Select.class, "Select")
         .registerSubtype(CheckBox.class, "CheckBox")
+        .registerSubtype(Input.class, "Input")
         .registerSubtype(OldInput.OldTextBox.class, "input")
         .registerSubtype(OldInput.OldSelect.class, "select")
         .registerSubtype(OldInput.OldCheckBox.class, "checkbox")
