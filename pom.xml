@@ -59,6 +59,7 @@
     <module>groovy</module>
     <module>spark</module>
     <module>markdown</module>
+    <module>mathjax</module>
     <module>angular</module>
     <module>shell</module>
     <module>livy</module>
@@ -725,6 +726,17 @@
         <repository>
           <id>cloudera</id>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+        <repository>
+          <id>hortonworks.releases</id>
+          <name>Hortonworks Releases Repository</name>
+          <url>http://repo.hortonworks.com/content/repositories/releases</url>
+          <releases>
+        	<enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
         </repository>
       </repositories>
     </profile>
