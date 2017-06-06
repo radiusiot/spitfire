@@ -44,13 +44,13 @@ public class InterpreterResult implements Serializable {
    * Type of Data.
    */
   public static enum Type {
+    MATHJAX,
     TEXT,
     HTML,
     ANGULAR,
     TABLE,
     IMG,
     SVG,
-    MATHJAX,
     NULL
   }
 
