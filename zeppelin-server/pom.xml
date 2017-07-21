@@ -79,6 +79,12 @@
         <artifactId>scalap</artifactId>
         <version>${scala.version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-auth</artifactId>
+        <version>${hadoop-common.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -312,6 +318,11 @@
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-reflect</artifactId>
       <version>${scala.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-auth</artifactId>
     </dependency>
 
     <!--test libraries-->

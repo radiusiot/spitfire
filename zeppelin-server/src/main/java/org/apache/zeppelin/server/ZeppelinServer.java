@@ -26,6 +26,7 @@ import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
 
+import io.datalayer.spitfire.filter.KerberosFilter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.web.env.EnvironmentLoaderListener;
 import org.apache.shiro.web.servlet.ShiroFilter;
@@ -188,6 +189,18 @@ public class ZeppelinServer extends Application {
 
     //Below is commented since zeppelin-docs module is removed.
     //final WebAppContext webAppSwagg = setupWebAppSwagger(conf);
+
+    final ServletHolder whoServletHolder = new ServletHolder(new io.datalayer.spitfire.servlet.WhoServlet());
+    webApp.addServlet(whoServletHolder, "/who");
+
+    FilterHolder authFilter = new FilterHolder(KerberosFilter.class);
+    authFilter.setInitParameter("type", "kerberos");
+//    authFilter.setInitParameter("kerberos.principal", "*");
+            authFilter.setInitParameter("kerberos.principal", "HTTP/localhost@DATALAYER.IO");
+    authFilter.setInitParameter("kerberos.keytab", "/etc/datalayer/conf/keytabs/spnego-localhost.keytab");
+    authFilter.setInitParameter("token.validity", "30");
+    authFilter.setInitParameter("kerberos.name.rules", "DEFAULT");
+    webApp.addFilter(authFilter, "/api/notebook/kerberos/flow/run/sync/*", EnumSet.allOf(DispatcherType.class));
 
     LOG.info("Starting zeppelin server");
     try {
