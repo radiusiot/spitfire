@@ -766,7 +766,7 @@
           <name>Hortonworks Releases Repository</name>
           <url>http://repo.hortonworks.com/content/repositories/releases</url>
           <releases>
-        	<enabled>true</enabled>
+            <enabled>true</enabled>
           </releases>
           <snapshots>
             <enabled>false</enabled>
