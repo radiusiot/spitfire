@@ -18,6 +18,7 @@
 package org.apache.zeppelin.display;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.zeppelin.common.JsonSerializable;
 import org.apache.zeppelin.display.ui.*;
 import org.apache.zeppelin.display.ui.OptionInput.ParamOption;
 
@@ -85,6 +86,44 @@ public class Input<T> implements Serializable {
 
   public String getArgument() {
     return argument;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Input<?> input = (Input<?>) o;
+
+    if (hidden != input.hidden) {
+      return false;
+    }
+    if (name != null ? !name.equals(input.name) : input.name != null) {
+      return false;
+    }
+    if (displayName != null ? !displayName.equals(input.displayName) : input.displayName != null) {
+      return false;
+    }
+    if (defaultValue != null ?
+        !defaultValue.equals(input.defaultValue) : input.defaultValue != null) {
+      return false;
+    }
+    return argument != null ? argument.equals(input.argument) : input.argument == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = name != null ? name.hashCode() : 0;
+    result = 31 * result + (displayName != null ? displayName.hashCode() : 0);
+    result = 31 * result + (defaultValue != null ? defaultValue.hashCode() : 0);
+    result = 31 * result + (hidden ? 1 : 0);
+    result = 31 * result + (argument != null ? argument.hashCode() : 0);
+    return result;
   }
 
   public static TextBox textbox(String name, String defaultValue) {
@@ -277,7 +316,7 @@ public class Input<T> implements Serializable {
           delimiter = DEFAULT_DELIMITER;
         }
         Collection<Object> checked = value instanceof Collection ? (Collection<Object>) value
-                : Arrays.asList((Object[]) value);
+            : Arrays.asList((Object[]) value);
         List<Object> validChecked = new LinkedList<>();
         for (Object o : checked) {  // filter out obsolete checked values
           for (ParamOption option : optionInput.getOptions()) {
@@ -317,22 +356,22 @@ public class Input<T> implements Serializable {
   }
 
   public static String[] split(String str, char split) {
-    return split(str, new String[] {String.valueOf(split)}, false);
+    return split(str, new String[]{String.valueOf(split)}, false);
   }
 
   public static String[] split(String str, String[] splitters, boolean includeSplitter) {
     String escapeSeq = "\"',;${}";
     char escapeChar = '\\';
 
-    String[] blockStart = new String[] {"\"", "'", "${", "N_(", "N_<"};
-    String[] blockEnd = new String[] {"\"", "'", "}", "N_)", "N_>"};
+    String[] blockStart = new String[]{"\"", "'", "${", "N_(", "N_<"};
+    String[] blockEnd = new String[]{"\"", "'", "}", "N_)", "N_>"};
 
     return split(str, escapeSeq, escapeChar, blockStart, blockEnd, splitters, includeSplitter);
 
   }
 
   public static String[] split(String str, String escapeSeq, char escapeChar, String[] blockStart,
-      String[] blockEnd, String[] splitters, boolean includeSplitter) {
+                               String[] blockEnd, String[] splitters, boolean includeSplitter) {
 
     List<String> splits = new ArrayList<>();
 
@@ -443,7 +482,7 @@ public class Input<T> implements Serializable {
         // check if block is started
         for (int b = 0; b < blockStart.length; b++) {
           if (curString.substring(lastEscapeOffset + 1)
-                       .endsWith(getBlockStr(blockStart[b])) == true) {
+              .endsWith(getBlockStr(blockStart[b])) == true) {
             blockStack.add(0, b); // block is started
             blockStartPos = i;
             break;
@@ -454,7 +493,7 @@ public class Input<T> implements Serializable {
     if (curString.length() > 0) {
       splits.add(curString.toString().trim());
     }
-    return splits.toArray(new String[] {});
+    return splits.toArray(new String[]{});
 
   }
 
