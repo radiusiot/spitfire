@@ -76,6 +76,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.DispatcherType;
+import java.util.EnumSet;
+import org.eclipse.jetty.servlet.FilterHolder;
+
 /**
  * Main class of Zeppelin.
  */
