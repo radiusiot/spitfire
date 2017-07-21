@@ -208,9 +208,6 @@ public class NotebookRestApi {
     HashSet<String> writers = permMap.get("writers");
     // Set readers, if writers and owners is empty -> set to user requesting the change
     if (readers != null && !readers.isEmpty()) {
-      if (writers.isEmpty()) {
-        writers = Sets.newHashSet(SecurityUtils.getPrincipal());
-      }
       if (owners.isEmpty()) {
         owners = Sets.newHashSet(SecurityUtils.getPrincipal());
       }
@@ -335,17 +332,19 @@ public class NotebookRestApi {
   public Response createNote(String message) throws IOException {
     String user = SecurityUtils.getPrincipal();
     LOG.info("Create new note by JSON {}", message);
-    NewNoteRequest request = gson.fromJson(message, NewNoteRequest.class);
+    NewNoteRequest request = NewNoteRequest.fromJson(message);
     AuthenticationInfo subject = new AuthenticationInfo(user);
     Note note = notebook.createNote(subject);
-    List<NewParagraphRequest> initialParagraphs = request.getParagraphs();
-    if (initialParagraphs != null) {
-      for (NewParagraphRequest paragraphRequest : initialParagraphs) {
-        Paragraph p = note.addParagraph(subject);
-        initParagraph(p, paragraphRequest, user);
+    if (request != null) {
+      List<NewParagraphRequest> initialParagraphs = request.getParagraphs();
+      if (initialParagraphs != null) {
+        for (NewParagraphRequest paragraphRequest : initialParagraphs) {
+          Paragraph p = note.addNewParagraph(subject);
+          initParagraph(p, paragraphRequest, user);
+        }
       }
     }
-    note.addParagraph(subject); // add one paragraph to the last
+    note.addNewParagraph(subject); // add one paragraph to the last
     String noteName = request.getName();
     if (noteName.isEmpty()) {
       noteName = "Note " + note.getId();
@@ -397,7 +396,7 @@ public class NotebookRestApi {
       throws IOException, CloneNotSupportedException, IllegalArgumentException {
     LOG.info("clone note by JSON {}", message);
     checkIfUserCanWrite(noteId, "Insufficient privileges you cannot clone this note");
-    NewNoteRequest request = gson.fromJson(message, NewNoteRequest.class);
+    NewNoteRequest request = NewNoteRequest.fromJson(message);
     String newNoteName = null;
     if (request != null) {
       newNoteName = request.getName();
@@ -428,14 +427,14 @@ public class NotebookRestApi {
     checkIfNoteIsNotNull(note);
     checkIfUserCanWrite(noteId, "Insufficient privileges you cannot add paragraph to this note");
 
-    NewParagraphRequest request = gson.fromJson(message, NewParagraphRequest.class);
+    NewParagraphRequest request = NewParagraphRequest.fromJson(message);
     AuthenticationInfo subject = new AuthenticationInfo(user);
     Paragraph p;
     Double indexDouble = request.getIndex();
     if (indexDouble == null) {
-      p = note.addParagraph(subject);
+      p = note.addNewParagraph(subject);
     } else {
-      p = note.insertParagraph(indexDouble.intValue(), subject);
+      p = note.insertNewParagraph(indexDouble.intValue(), subject);
     }
     initParagraph(p, request, user);
     note.persist(subject);
@@ -588,17 +587,17 @@ public class NotebookRestApi {
       throws IOException, IllegalArgumentException {
     LOG.info("run note jobs {} ", noteId);
     Note note = notebook.getNote(noteId);
+    AuthenticationInfo subject = new AuthenticationInfo(SecurityUtils.getPrincipal());
     checkIfNoteIsNotNull(note);
     checkIfUserCanWrite(noteId, "Insufficient privileges you cannot run job for this note");
 
     try {
-      note.runAll();
+      note.runAll(subject);
     } catch (Exception ex) {
       LOG.error("Exception from run", ex);
       return new JsonResponse<>(Status.PRECONDITION_FAILED,
           ex.getMessage() + "- Not selected or Invalid Interpreter bind").build();
     }
-
     return new JsonResponse<>(Status.OK).build();
   }
 
@@ -788,7 +787,7 @@ public class NotebookRestApi {
       throws IOException, IllegalArgumentException {
     LOG.info("Register cron job note={} request cron msg={}", noteId, message);
 
-    CronRequest request = gson.fromJson(message, CronRequest.class);
+    CronRequest request = CronRequest.fromJson(message);
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
@@ -938,7 +937,7 @@ public class NotebookRestApi {
     // handle params if presented
     if (!StringUtils.isEmpty(message)) {
       RunParagraphWithParametersRequest request =
-          gson.fromJson(message, RunParagraphWithParametersRequest.class);
+          RunParagraphWithParametersRequest.fromJson(message);
       Map<String, Object> paramsForUpdating = request.getParams();
       if (paramsForUpdating != null) {
         paragraph.settings.getParams().putAll(paramsForUpdating);
@@ -969,9 +968,10 @@ public class NotebookRestApi {
       throw new BadRequestException("paragraph config cannot be empty");
     }
     Map<String, Object> origConfig = p.getConfig();
-    for (String key : newConfig.keySet()) {
-      origConfig.put(key, newConfig.get(key));
+    for ( final Map.Entry<String, Object> entry : newConfig.entrySet()){
+      origConfig.put(entry.getKey(), entry.getValue());
     }
+
     p.setConfig(origConfig);
   }
 

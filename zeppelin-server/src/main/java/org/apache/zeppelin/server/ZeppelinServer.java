@@ -27,7 +27,6 @@ import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.cxf.jaxrs.servlet.CXFNonSpringJaxrsServlet;
 import org.apache.shiro.web.env.EnvironmentLoaderListener;
 import org.apache.shiro.web.servlet.ShiroFilter;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
@@ -115,6 +114,7 @@ public class ZeppelinServer extends Application {
        */
       heliumBundleFactory = new HeliumBundleFactory(
           conf,
+          null,
           new File(conf.getRelativeDir(ConfVars.ZEPPELIN_DEP_LOCALREPO)),
           new File(conf.getRelativeDir("lib/node_modules/zeppelin-tabledata")),
           new File(conf.getRelativeDir("lib/node_modules/zeppelin-vis")),
@@ -122,6 +122,7 @@ public class ZeppelinServer extends Application {
     } else {
       heliumBundleFactory = new HeliumBundleFactory(
           conf,
+          null,
           new File(conf.getRelativeDir(ConfVars.ZEPPELIN_DEP_LOCALREPO)),
           new File(conf.getRelativeDir("zeppelin-web/src/app/tabledata")),
           new File(conf.getRelativeDir("zeppelin-web/src/app/visualization")),
@@ -138,7 +139,7 @@ public class ZeppelinServer extends Application {
 
     // create bundle
     try {
-      heliumBundleFactory.buildBundle(helium.getBundlePackagesToBundle());
+      heliumBundleFactory.buildAllPackages(helium.getBundlePackagesToBundle());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
@@ -191,6 +192,9 @@ public class ZeppelinServer extends Application {
     LOG.info("Starting zeppelin server");
     try {
       jettyWebServer.start(); //Instantiates ZeppelinServer
+      if (conf.getJettyName() != null) {
+        org.eclipse.jetty.http.HttpGenerator.setJettyVersion(conf.getJettyName());
+      }
     } catch (Exception e) {
       LOG.error("Error while running jettyServer", e);
       System.exit(-1);
@@ -281,7 +285,7 @@ public class ZeppelinServer extends Application {
     final ServletHolder servletHolder = new ServletHolder(notebookWsServer);
     servletHolder.setInitParameter("maxTextMessageSize", maxTextMessageSize);
 
-    final ServletContextHandler cxfContext = new ServletContextHandler(
+    final ServletContextHandler context = new ServletContextHandler(
         ServletContextHandler.SESSIONS);
 
     webapp.addServlet(servletHolder, "/ws/*");
@@ -311,19 +315,22 @@ public class ZeppelinServer extends Application {
   private static void setupRestApiContextHandler(WebAppContext webapp,
                                                  ZeppelinConfiguration conf) {
 
-    final ServletHolder cxfServletHolder = new ServletHolder(new CXFNonSpringJaxrsServlet());
-    cxfServletHolder.setInitParameter("javax.ws.rs.Application", ZeppelinServer.class.getName());
-    cxfServletHolder.setName("rest");
-    cxfServletHolder.setForcedPath("rest");
+    final ServletHolder servletHolder = new ServletHolder(
+            new org.glassfish.jersey.servlet.ServletContainer());
+
+    servletHolder.setInitParameter("javax.ws.rs.Application", ZeppelinServer.class.getName());
+    servletHolder.setName("rest");
+    servletHolder.setForcedPath("rest");
 
     webapp.setSessionHandler(new SessionHandler());
-    webapp.addServlet(cxfServletHolder, "/api/*");
+    webapp.addServlet(servletHolder, "/api/*");
 
     String shiroIniPath = conf.getShiroPath();
     if (!StringUtils.isBlank(shiroIniPath)) {
       webapp.setInitParameter("shiroConfigLocations", new File(shiroIniPath).toURI().toString());
-      SecurityUtils.initSecurityManager(shiroIniPath);
-      webapp.addFilter(ShiroFilter.class, "/api/*", EnumSet.allOf(DispatcherType.class));
+      SecurityUtils.setIsEnabled(true);
+      webapp.addFilter(ShiroFilter.class, "/api/*", EnumSet.allOf(DispatcherType.class))
+              .setInitParameter("staticSecurityManagerEnabled", "true");
       webapp.addEventListener(new EnvironmentLoaderListener());
     }
   }

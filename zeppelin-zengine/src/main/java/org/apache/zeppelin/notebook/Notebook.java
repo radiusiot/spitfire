@@ -182,14 +182,11 @@ public class Notebook implements NoteEventListener {
    * @throws IOException, IllegalArgumentException
    */
   public String exportNote(String noteId) throws IOException, IllegalArgumentException {
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.setPrettyPrinting();
-    Gson gson = gsonBuilder.create();
     Note note = getNote(noteId);
     if (note == null) {
       throw new IllegalArgumentException(noteId + " not found");
     }
-    return gson.toJson(note);
+    return note.toJson();
   }
 
   /**
@@ -202,16 +199,9 @@ public class Notebook implements NoteEventListener {
    */
   public Note importNote(String sourceJson, String noteName, AuthenticationInfo subject)
       throws IOException {
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.setPrettyPrinting();
-
-    Gson gson =
-        gsonBuilder.registerTypeAdapter(Date.class, new NotebookImportDeserializer()).create();
-    JsonReader reader = new JsonReader(new StringReader(sourceJson));
-    reader.setLenient(true);
     Note newNote;
     try {
-      Note oldNote = gson.fromJson(reader, Note.class);
+      Note oldNote = Note.fromJson(sourceJson);
       convertFromSingleResultToMultipleResultsFormat(oldNote);
       newNote = createNote(subject);
       if (noteName != null)
@@ -338,7 +328,11 @@ public class Notebook implements NoteEventListener {
       note = notes.remove(id);
       folders.removeNote(note);
     }
-    interpreterSettingManager.removeNoteInterpreterSettingBinding(subject.getUser(), id);
+    try {
+      interpreterSettingManager.removeNoteInterpreterSettingBinding(subject.getUser(), id);
+    } catch (IOException e) {
+      logger.error(e.toString(), e);
+    }
     noteSearchService.deleteIndexDocs(note);
     notebookAuthorization.removeNote(id);
 
@@ -414,6 +408,10 @@ public class Notebook implements NoteEventListener {
   public void convertFromSingleResultToMultipleResultsFormat(Note note) {
     for (Paragraph p : note.paragraphs) {
       Object ret = p.getPreviousResultFormat();
+      if (ret != null && p.results != null) {
+        continue; // already converted
+      }
+
       try {
         if (ret != null && ret instanceof Map) {
           Map r = ((Map) ret);
