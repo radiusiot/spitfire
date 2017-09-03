@@ -270,6 +270,9 @@ public class NotebookServer extends WebSocketServlet
         case RUN_ALL_PARAGRAPHS:
           runAllParagraphs(conn, userAndRoles, notebook, messagereceived);
           break;
+        case RUN_ALL_PARAGRAPHS_SPITFIRE:
+          runAllParagraphsSpitfire(conn, userAndRoles, notebook, messagereceived);
+          break;
         case CANCEL_PARAGRAPH:
           cancelParagraph(conn, userAndRoles, notebook, messagereceived);
           break;
@@ -1647,14 +1650,50 @@ public class NotebookServer extends WebSocketServlet
 
   private void runAllParagraphs(NotebookSocket conn, HashSet<String> userAndRoles,
                                 Notebook notebook,
-      Message fromMessage) throws IOException {
+                                Message fromMessage) throws IOException {
     final String noteId = (String) fromMessage.get("noteId");
     if (StringUtils.isBlank(noteId)) {
       return;
     }
 
     if (!hasParagraphRunnerPermission(conn, notebook, noteId,
-        userAndRoles, fromMessage.principal, "run all paragraphs")) {
+            userAndRoles, fromMessage.principal, "run all paragraphs")) {
+      return;
+    }
+
+    List<Map<String, Object>> paragraphs =
+            gson.fromJson(String.valueOf(fromMessage.data.get("paragraphs")),
+                    new TypeToken<List<Map<String, Object>>>() {}.getType());
+
+    for (Map<String, Object> raw : paragraphs) {
+      String paragraphId = (String) raw.get("id");
+      if (paragraphId == null) {
+        continue;
+      }
+
+      String text = (String) raw.get("paragraph");
+      String title = (String) raw.get("title");
+      Map<String, Object> params = (Map<String, Object>) raw.get("params");
+      Map<String, Object> config = (Map<String, Object>) raw.get("config");
+
+      Note note = notebook.getNote(noteId);
+      Paragraph p = setParagraphUsingMessage(note, fromMessage,
+              paragraphId, text, title, params, config);
+
+      persistAndExecuteSingleParagraph(conn, note, p);
+    }
+  }
+
+  private void runAllParagraphsSpitfire(NotebookSocket conn, HashSet<String> userAndRoles,
+                                Notebook notebook,
+                                Message fromMessage) throws IOException {
+    final String noteId = (String) fromMessage.get("noteId");
+    if (StringUtils.isBlank(noteId)) {
+      return;
+    }
+
+    if (!hasParagraphRunnerPermission(conn, notebook, noteId,
+            userAndRoles, fromMessage.principal, "run all paragraphs")) {
       return;
     }
 
