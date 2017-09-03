@@ -110,6 +110,7 @@ public class NotebookRestApi {
     permissionsMap.put("owners", notebookAuthorization.getOwners(noteId));
     permissionsMap.put("readers", notebookAuthorization.getReaders(noteId));
     permissionsMap.put("writers", notebookAuthorization.getWriters(noteId));
+    permissionsMap.put("runners", notebookAuthorization.getRunners(noteId));
     return new JsonResponse<>(Status.OK, "", permissionsMap).build();
   }
 
@@ -177,6 +178,18 @@ public class NotebookRestApi {
       throw new ForbiddenException(errorMsg);
     }
   }
+
+  /**
+   * Check if the current user can run the given note.
+   */
+  private void checkIfUserCanRun(String noteId, String errorMsg) {
+    Set<String> userAndRoles = Sets.newHashSet();
+    userAndRoles.add(SecurityUtils.getPrincipal());
+    userAndRoles.addAll(SecurityUtils.getRoles());
+    if (!notebookAuthorization.hasRunAuthorization(userAndRoles, noteId)) {
+      throw new ForbiddenException(errorMsg);
+    }
+  }
   
   private void checkIfNoteIsNotNull(Note note) {
     if (note == null) {
@@ -211,15 +224,31 @@ public class NotebookRestApi {
     HashMap<String, HashSet<String>> permMap =
         gson.fromJson(req, new TypeToken<HashMap<String, HashSet<String>>>() {}.getType());
     Note note = notebook.getNote(noteId);
-    
-    LOG.info("Set permissions {} {} {} {} {}", noteId, principal, permMap.get("owners"),
-        permMap.get("readers"), permMap.get("writers"));
+
+    LOG.info("Set permissions {} {} {} {} {} {}", noteId, principal, permMap.get("owners"),
+            permMap.get("readers"), permMap.get("runners"), permMap.get("writers"));
 
     HashSet<String> readers = permMap.get("readers");
+    HashSet<String> runners = permMap.get("runners");
     HashSet<String> owners = permMap.get("owners");
     HashSet<String> writers = permMap.get("writers");
-    // Set readers, if writers and owners is empty -> set to user requesting the change
+    // Set readers, if runners, writers and owners is empty -> set to user requesting the change
     if (readers != null && !readers.isEmpty()) {
+      if (runners.isEmpty()) {
+        runners = Sets.newHashSet(SecurityUtils.getPrincipal());
+      }
+      if (writers.isEmpty()) {
+        writers = Sets.newHashSet(SecurityUtils.getPrincipal());
+      }
+      if (owners.isEmpty()) {
+        owners = Sets.newHashSet(SecurityUtils.getPrincipal());
+      }
+    }
+    // Set runners, if writers and owners is empty -> set to user requesting the change
+    if (runners != null && !runners.isEmpty()) {
+      if (writers.isEmpty()) {
+        writers = Sets.newHashSet(SecurityUtils.getPrincipal());
+      }
       if (owners.isEmpty()) {
         owners = Sets.newHashSet(SecurityUtils.getPrincipal());
       }
@@ -232,10 +261,12 @@ public class NotebookRestApi {
     }
 
     notebookAuthorization.setReaders(noteId, readers);
+    notebookAuthorization.setRunners(noteId, runners);
     notebookAuthorization.setWriters(noteId, writers);
     notebookAuthorization.setOwners(noteId, owners);
-    LOG.debug("After set permissions {} {} {}", notebookAuthorization.getOwners(noteId),
-        notebookAuthorization.getReaders(noteId), notebookAuthorization.getWriters(noteId));
+    LOG.debug("After set permissions {} {} {} {}", notebookAuthorization.getOwners(noteId),
+            notebookAuthorization.getReaders(noteId), notebookAuthorization.getRunners(noteId),
+            notebookAuthorization.getWriters(noteId));
     AuthenticationInfo subject = new AuthenticationInfo(SecurityUtils.getPrincipal());
     note.persist(subject);
     notebookServer.broadcastNote(note);
@@ -601,7 +632,7 @@ public class NotebookRestApi {
     Note note = notebook.getNote(noteId);
     AuthenticationInfo subject = new AuthenticationInfo(SecurityUtils.getPrincipal());
     checkIfNoteIsNotNull(note);
-    checkIfUserCanWrite(noteId, "Insufficient privileges you cannot run job for this note");
+    checkIfUserCanRun(noteId, "Insufficient privileges you cannot run job for this note");
 
     try {
       note.runAll(subject);
@@ -751,7 +782,7 @@ public class NotebookRestApi {
     LOG.info("stop note jobs {} ", noteId);
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
-    checkIfUserCanWrite(noteId, "Insufficient privileges you cannot stop this job for this note");
+    checkIfUserCanRun(noteId, "Insufficient privileges you cannot stop this job for this note");
 
     for (Paragraph p : note.getParagraphs()) {
       if (!p.isTerminated()) {
@@ -825,7 +856,7 @@ public class NotebookRestApi {
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
-    checkIfUserCanWrite(noteId, "Insufficient privileges you cannot run job for this note");
+    checkIfUserCanRun(noteId, "Insufficient privileges you cannot run job for this note");
     Paragraph paragraph = note.getParagraph(paragraphId);
     checkIfParagraphIsNotNull(paragraph);
 
@@ -863,7 +894,7 @@ public class NotebookRestApi {
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
-    checkIfUserCanWrite(noteId, "Insufficient privileges you cannot run paragraph");
+    checkIfUserCanRun(noteId, "Insufficient privileges you cannot run paragraph");
     Paragraph paragraph = note.getParagraph(paragraphId);
     checkIfParagraphIsNotNull(paragraph);
 
@@ -901,7 +932,7 @@ public class NotebookRestApi {
     LOG.info("stop paragraph job {} ", noteId);
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
-    checkIfUserCanWrite(noteId, "Insufficient privileges you cannot stop paragraph");
+    checkIfUserCanRun(noteId, "Insufficient privileges you cannot stop paragraph");
     Paragraph p = note.getParagraph(paragraphId);
     checkIfParagraphIsNotNull(p);
     p.abort();
@@ -926,7 +957,7 @@ public class NotebookRestApi {
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
-    checkIfUserCanWrite(noteId, "Insufficient privileges you cannot set a cron job for this note");
+    checkIfUserCanRun(noteId, "Insufficient privileges you cannot set a cron job for this note");
 
     if (!CronExpression.isValidExpression(request.getCronString())) {
       return new JsonResponse<>(Status.BAD_REQUEST, "wrong cron expressions.").build();
@@ -1057,7 +1088,8 @@ public class NotebookRestApi {
       String noteId = Id[0];
       if (!notebookAuthorization.isOwner(noteId, userAndRoles) &&
           !notebookAuthorization.isReader(noteId, userAndRoles) &&
-          !notebookAuthorization.isWriter(noteId, userAndRoles)) {
+          !notebookAuthorization.isWriter(noteId, userAndRoles) &&
+              !notebookAuthorization.isRunner(noteId, userAndRoles)) {
         notesFound.remove(i);
         i--;
       }
