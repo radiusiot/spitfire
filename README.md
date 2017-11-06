@@ -1,6 +1,6 @@
+[![Datalayer](http://datalayer.io/img/logo-datalayer-horizontal.png)](http://datalayer.io)
+
 # Zeppelin with Datalayer Addons
 
-Read the documentation on [Datalayer Docs](http://docs.datalayer.io/latest/).
-
-[![Datalayer](http://docs.datalayer.io/latest/images/datalayer-logo.png)](http://datalayer.io)
+Read the documentation on [Datalayer Docs](http://docs.datalayer.io).
 
