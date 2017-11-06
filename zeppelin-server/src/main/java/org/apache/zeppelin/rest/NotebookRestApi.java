@@ -46,7 +46,6 @@ import org.apache.zeppelin.notebook.socket.Message;
 import org.apache.zeppelin.rest.exception.BadRequestException;
 import org.apache.zeppelin.rest.exception.NotFoundException;
 import org.apache.zeppelin.rest.exception.ForbiddenException;
-import org.apache.zeppelin.rest.graph.TopologicalSort;
 import org.apache.zeppelin.rest.message.CronRequest;
 import org.apache.zeppelin.rest.message.NewNoteRequest;
 import org.apache.zeppelin.rest.message.NewParagraphRequest;
@@ -65,6 +64,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+
+import org.apache.zeppelin.rest.graph.TopologicalSort;
 
 /**
  * Rest api endpoint for the notebook.
