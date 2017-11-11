@@ -35,18 +35,31 @@ public class SparkK8InterpreterLauncher extends SparkInterpreterLauncher {
   }
 
   @Override
-  protected InterpreterClient createRemoteProcess(InterpreterLaunchContext context,
-                                                  InterpreterRunner runner,
-                                                  String groupName,
-                                                  int connectTimeout) {
-    // create new remote process
-    String localRepoPath = zConf.getInterpreterLocalRepoPath() + "/"
-            + context.getInterpreterGroupId();
-    return new SparkK8RemoteInterpreterManagedProcess(
-            runner != null ? runner.getPath() : zConf.getInterpreterRemoteRunnerPath(),
-            zConf.getCallbackPortRange(),
-            zConf.getInterpreterDir() + "/" + groupName, localRepoPath,
-            buildEnvFromProperties(), connectTimeout, groupName, context.getInterpreterGroupId());
+  public InterpreterClient launch(InterpreterLaunchContext context) {
+    LOGGER.info("Launching Interpreter: " + context.getInterpreterSettingGroup());
+    this.properties = context.getProperties();
+    InterpreterOption option = context.getOption();
+    InterpreterRunner runner = context.getRunner();
+    String groupName = context.getInterpreterSettingGroup();
+
+    int connectTimeout =
+            zConf.getInt(ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETER_CONNECT_TIMEOUT);
+    if (option.isExistingProcess()) {
+      return new RemoteInterpreterRunningProcess(
+              connectTimeout,
+              option.getHost(),
+              option.getPort());
+    } else {
+      // create new remote process
+      String localRepoPath = zConf.getInterpreterLocalRepoPath() + "/"
+              + context.getInterpreterSettingId();
+      return new SparkK8RemoteInterpreterManagedProcess(
+              runner != null ? runner.getPath() : zConf.getInterpreterRemoteRunnerPath(),
+              zConf.getCallbackPortRange(),
+              zConf.getInterpreterDir() + "/" + groupName, localRepoPath,
+              buildEnvFromProperties(), connectTimeout, groupName,
+              context.getInterpreterSettingId());
+    }
   }
 
   @Override

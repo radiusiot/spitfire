@@ -57,8 +57,9 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
   private KubernetesClient kubernetesClient;
   private String driverPodName;
   private Service driverService;
-  private String interpreterGroupId;
+  private String interpreterSettingId;
   private String processLabelId;
+  private String connectionStatus = "Driver pod not found.";
 
   public SparkK8RemoteInterpreterManagedProcess(String intpRunner,
                                                 String portRange,
@@ -66,11 +67,18 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
                                                 String localRepoDir,
                                                 Map<String, String> env,
                                                 int connectTimeout,
-                                                String groupName, String interpreterGroupId) {
+                                                String interpreterGroupName,
+                                                String interpreterSettingId) {
 
-    super(intpRunner, portRange, intpDir, localRepoDir, env, connectTimeout, groupName);
-    this.processLabelId = generatePodLabelId(interpreterGroupId);
-    this.interpreterGroupId = formatId(interpreterGroupId, 50);
+    super(connectTimeout);
+    this.interpreterRunner = intpRunner;
+    this.portRange = portRange;
+    this.env = env;
+    this.interpreterDir = intpDir;
+    this.localRepoDir = localRepoDir;
+    this.interpreterGroupName = interpreterGroupName;
+    this.processLabelId = generatePodLabelId(interpreterSettingId);
+    this.interpreterSettingId = formatId(interpreterSettingId, 50);
     this.port = 30000;
   }
 
@@ -105,15 +113,13 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
     }
     cmdLine.addArgument("-l", false);
     cmdLine.addArgument(localRepoDir, false);
-    cmdLine.addArgument("-g", false);
-    cmdLine.addArgument(interpreterGroupName, false);
 
-    if (interpreterGroupId != null) {
-      cmdLine.addArgument("-i", false);
-      cmdLine.addArgument(interpreterGroupId, false);
+    if (interpreterSettingId != null) {
+      cmdLine.addArgument("-g", false);
+      cmdLine.addArgument(interpreterSettingId, false);
     }
     if (processLabelId != null) {
-      cmdLine.addArgument("-t", false);
+      cmdLine.addArgument("-i", false);
       cmdLine.addArgument(processLabelId, false);
     }
 
@@ -129,6 +135,7 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
           break;
         } else {
           try {
+            logger.info("wait ... {}", connectionStatus);
             Thread.sleep(500);
           } catch (InterruptedException e) {
             logger.error("Exception in RemoteInterpreterProcess while synchronized reference " +
@@ -143,7 +150,9 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
     }
 
     if (!running.get()) {
-      throw new RuntimeException("Unable to start SparkK8RemoteInterpreterManagedProcess");
+      stop();
+      throw new RuntimeException("Unable to start SparkK8RemoteInterpreterManagedProcess: " +
+              connectionStatus);
     }
   }
 
@@ -151,7 +160,7 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
     String hostName = null;
     // try to obtain endpoint url from Spark driver
     try (final KubernetesClient client = getKubernetesClient()) {
-      Pod driverPod = getSparkDriverPod(client, DRIVER_POD_NAME_PREFIX + interpreterGroupName);
+      Pod driverPod = getSparkDriverPod(client, DRIVER_POD_NAME_PREFIX + interpreterSettingId);
       if (driverPod != null) {
         driverPodName = driverPod.getMetadata().getName();
         logger.debug("Driver pod name: " + driverPodName);
@@ -159,6 +168,7 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
         if (driverService != null) {
           logger.info("ClusterIP {}", driverService.getSpec().getClusterIP());
           hostName = driverService.getSpec().getClusterIP();
+          connectionStatus = "Driver service is available at " + host + ":" + port;
         }
       }
     } catch (KubernetesClientException e) {
@@ -185,7 +195,8 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
       for (Pod remoteServerPod : podList) {
         String podName = remoteServerPod.getMetadata().getName();
         if (podName != null && podName.startsWith(podLabel)) {
-          logger.debug("Driver pod found. Status: " + remoteServerPod.getStatus().getPhase());
+          connectionStatus = "Driver pod found. Status: " + remoteServerPod.getStatus().getPhase();
+          logger.debug(connectionStatus);
           if (remoteServerPod.getStatus().getPhase().equalsIgnoreCase("running")) {
             return remoteServerPod;
           }
@@ -243,6 +254,158 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
         kubernetesClient = null;
       } catch (KubernetesClientException e) {
         logger.error(e.getMessage(), e);
+      }
+    }
+  }
+
+  @Override
+  public String getHost() {
+    return host;
+  }
+
+  @Override
+  public int getPort() {
+    return port;
+  }
+
+  protected ByteArrayOutputStream executeCommand(CommandLine cmdLine) {
+
+    executor = new DefaultExecutor();
+
+    ByteArrayOutputStream cmdOut = new ByteArrayOutputStream();
+    processOutput = new ProcessLogOutputStream(logger);
+    processOutput.setOutputStream(cmdOut);
+
+    executor.setStreamHandler(new PumpStreamHandler(processOutput));
+    watchdog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
+    executor.setWatchdog(watchdog);
+
+    try {
+      Map procEnv = EnvironmentUtils.getProcEnvironment();
+      procEnv.putAll(env);
+
+      logger.info("Run interpreter process {}", cmdLine);
+      executor.execute(cmdLine, procEnv, this);
+    } catch (IOException e) {
+      running.set(false);
+      throw new RuntimeException(e);
+    }
+
+    return cmdOut;
+  }
+
+  public void stop() {
+    // shutdown EventPoller first.
+    getRemoteInterpreterEventPoller().shutdown();
+    stopEndPoint();
+    if (isRunning()) {
+      logger.info("kill interpreter process");
+      try {
+        callRemoteFunction(new RemoteFunction<Void>() {
+          @Override
+          public Void call(RemoteInterpreterService.Client client) throws Exception {
+            client.shutdown();
+            return null;
+          }
+        });
+      } catch (Exception e) {
+        logger.warn("ignore the exception when shutting down");
+      }
+    }
+
+    executor = null;
+    watchdog.destroyProcess();
+    watchdog = null;
+    running.set(false);
+    logger.info("Remote process terminated");
+  }
+
+  public void onProcessComplete(int exitValue) {
+    logger.info("Interpreter process exited {}", exitValue);
+    running.set(false);
+
+  }
+
+  public void onProcessFailed(ExecuteException e) {
+    logger.info("Interpreter process failed {}", e);
+    running.set(false);
+  }
+
+  @VisibleForTesting
+  public Map<String, String> getEnv() {
+    return env;
+  }
+
+  @VisibleForTesting
+  public String getLocalRepoDir() {
+    return localRepoDir;
+  }
+
+  @VisibleForTesting
+  public String getInterpreterDir() {
+    return interpreterDir;
+  }
+
+  @VisibleForTesting
+  public String getInterpreterGroupName() {
+    return interpreterGroupName;
+  }
+
+  @VisibleForTesting
+  public String getInterpreterRunner() {
+    return interpreterRunner;
+  }
+
+  public boolean isRunning() {
+    return running.get();
+  }
+
+  /**
+   * ProcessLogOutputStream
+   */
+  protected static class ProcessLogOutputStream extends LogOutputStream {
+
+    private Logger logger;
+    OutputStream out;
+
+    public ProcessLogOutputStream(Logger logger) {
+      this.logger = logger;
+    }
+
+    @Override
+    protected void processLine(String s, int i) {
+      this.logger.debug(s);
+    }
+
+    @Override
+    public void write(byte [] b) throws IOException {
+      super.write(b);
+
+      if (out != null) {
+        synchronized (this) {
+          if (out != null) {
+            out.write(b);
+          }
+        }
+      }
+    }
+
+    @Override
+    public void write(byte [] b, int offset, int len) throws IOException {
+      super.write(b, offset, len);
+
+      if (out != null) {
+        synchronized (this) {
+          if (out != null) {
+            out.write(b, offset, len);
+          }
+        }
+      }
+    }
+
+    public void setOutputStream(OutputStream out) {
+      synchronized (this) {
+        this.out = out;
       }
     }
   }
