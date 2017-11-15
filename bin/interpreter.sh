@@ -66,6 +66,8 @@ while getopts "hc:p:d:l:v:u:g:i:" o; do
 done
 
 
+INTERPRETER_SETTING_NAME=$INTERPRETER_DIR
+
 if [ -z "${PORT}" ] || [ -z "${INTERPRETER_DIR}" ]; then
     usage
     exit 1
@@ -212,7 +214,7 @@ fi
 
 if [[ -n "${SPARK_SUBMIT}" ]]; then
     if [[ -n "${RUN_SPARK_ON_K8}" ]]; then
-       INTERPRETER_RUN_COMMAND+=' '` echo ${SPARK_SUBMIT} --class ${ZEPPELIN_SERVER} ${SPARK_SUBMIT_OPTIONS} --conf spark.app.name=zri-${INTERPRETER_SETTING_NAME} --conf spark.kubernetes.driver.label.interpreter-processId=${INTERPRETER_PROCESS_ID} --conf spark.metrics.namespace=zeppelin_${INTERPRETER_SETTING_NAME} ${SPARK_APP_JAR} ${PORT}`
+       INTERPRETER_RUN_COMMAND+=' '` echo ${SPARK_SUBMIT} --class ${ZEPPELIN_SERVER} ${SPARK_SUBMIT_OPTIONS} --conf spark.app.name=zri-${INTERPRETER_SETTING_NAME} --conf spark.kubernetes.driver.label.interpreter-processId=${INTERPRETER_PROCESS_ID} --conf spark.metrics.namespace=zeppelin_${INTERPRETER_SETTING_NAME} ${ZEPPELIN_SPARK_CONF} ${SPARK_APP_JAR} ${PORT}`
     elif [[ -n "$ZEPPELIN_IMPERSONATE_USER" ]] && [[ "$ZEPPELIN_IMPERSONATE_SPARK_PROXY_USER" != "false" ]];  then
        INTERPRETER_RUN_COMMAND+=' '` echo ${SPARK_SUBMIT} --class ${ZEPPELIN_SERVER} --driver-class-path \"${ZEPPELIN_INTP_CLASSPATH_OVERRIDES}:${ZEPPELIN_INTP_CLASSPATH}\" --driver-java-options \"${JAVA_INTP_OPTS}\" ${SPARK_SUBMIT_OPTIONS} ${ZEPPELIN_SPARK_CONF} --proxy-user ${ZEPPELIN_IMPERSONATE_USER} ${SPARK_APP_JAR} ${CALLBACK_HOST} ${PORT}`
     else
