@@ -54,6 +54,7 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
    * Default url for Kubernetes inside of an Kubernetes cluster.
    */
   private static String K8_URL = "https://kubernetes:443";
+//  private static String K8_URL = "https://192.168.1.7:6443";
   private KubernetesClient kubernetesClient;
   private String driverPodName;
   private Service driverService;
@@ -70,13 +71,8 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
                                                 String interpreterGroupName,
                                                 String interpreterSettingId) {
 
-    super(connectTimeout);
-    this.interpreterRunner = intpRunner;
-    this.portRange = portRange;
+    super(intpRunner,  portRange, intpDir, localRepoDir, env, connectTimeout, interpreterGroupName);
     this.env = env;
-    this.interpreterDir = intpDir;
-    this.localRepoDir = localRepoDir;
-    this.interpreterGroupName = interpreterGroupName;
     this.processLabelId = generatePodLabelId(interpreterSettingId);
     this.interpreterSettingId = formatId(interpreterSettingId, 50);
     this.port = 30000;
@@ -129,6 +125,7 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
     long startTime = System.currentTimeMillis();
     while (System.currentTimeMillis() - startTime < getConnectTimeout()) {
       host = obtainEndpointHost();
+      logger.info("host endpoint {}", host);
       try {
         if (host != null && RemoteInterpreterUtils.checkIfRemoteEndpointAccessible(host, port)) {
           running.set(true);
@@ -266,148 +263,6 @@ public class SparkK8RemoteInterpreterManagedProcess extends BaseRemoteInterprete
   @Override
   public int getPort() {
     return port;
-  }
-
-  protected ByteArrayOutputStream executeCommand(CommandLine cmdLine) {
-
-    executor = new DefaultExecutor();
-
-    ByteArrayOutputStream cmdOut = new ByteArrayOutputStream();
-    processOutput = new ProcessLogOutputStream(logger);
-    processOutput.setOutputStream(cmdOut);
-
-    executor.setStreamHandler(new PumpStreamHandler(processOutput));
-    watchdog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
-    executor.setWatchdog(watchdog);
-
-    try {
-      Map procEnv = EnvironmentUtils.getProcEnvironment();
-      procEnv.putAll(env);
-
-      logger.info("Run interpreter process {}", cmdLine);
-      executor.execute(cmdLine, procEnv, this);
-    } catch (IOException e) {
-      running.set(false);
-      throw new RuntimeException(e);
-    }
-
-    return cmdOut;
-  }
-
-  public void stop() {
-    // shutdown EventPoller first.
-    getRemoteInterpreterEventPoller().shutdown();
-    stopEndPoint();
-    if (isRunning()) {
-      logger.info("kill interpreter process");
-      try {
-        callRemoteFunction(new RemoteFunction<Void>() {
-          @Override
-          public Void call(RemoteInterpreterService.Client client) throws Exception {
-            client.shutdown();
-            return null;
-          }
-        });
-      } catch (Exception e) {
-        logger.warn("ignore the exception when shutting down");
-      }
-    }
-
-    executor = null;
-    watchdog.destroyProcess();
-    watchdog = null;
-    running.set(false);
-    logger.info("Remote process terminated");
-  }
-
-  public void onProcessComplete(int exitValue) {
-    logger.info("Interpreter process exited {}", exitValue);
-    running.set(false);
-
-  }
-
-  public void onProcessFailed(ExecuteException e) {
-    logger.info("Interpreter process failed {}", e);
-    running.set(false);
-  }
-
-  @VisibleForTesting
-  public Map<String, String> getEnv() {
-    return env;
-  }
-
-  @VisibleForTesting
-  public String getLocalRepoDir() {
-    return localRepoDir;
-  }
-
-  @VisibleForTesting
-  public String getInterpreterDir() {
-    return interpreterDir;
-  }
-
-  @VisibleForTesting
-  public String getInterpreterGroupName() {
-    return interpreterGroupName;
-  }
-
-  @VisibleForTesting
-  public String getInterpreterRunner() {
-    return interpreterRunner;
-  }
-
-  public boolean isRunning() {
-    return running.get();
-  }
-
-  /**
-   * ProcessLogOutputStream
-   */
-  protected static class ProcessLogOutputStream extends LogOutputStream {
-
-    private Logger logger;
-    OutputStream out;
-
-    public ProcessLogOutputStream(Logger logger) {
-      this.logger = logger;
-    }
-
-    @Override
-    protected void processLine(String s, int i) {
-      this.logger.debug(s);
-    }
-
-    @Override
-    public void write(byte [] b) throws IOException {
-      super.write(b);
-
-      if (out != null) {
-        synchronized (this) {
-          if (out != null) {
-            out.write(b);
-          }
-        }
-      }
-    }
-
-    @Override
-    public void write(byte [] b, int offset, int len) throws IOException {
-      super.write(b, offset, len);
-
-      if (out != null) {
-        synchronized (this) {
-          if (out != null) {
-            out.write(b, offset, len);
-          }
-        }
-      }
-    }
-
-    public void setOutputStream(OutputStream out) {
-      synchronized (this) {
-        this.out = out;
-      }
-    }
   }
 
 }

@@ -19,8 +19,12 @@
 package org.apache.zeppelin.interpreter.launcher;
 
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
+import org.apache.zeppelin.interpreter.InterpreterOption;
 import org.apache.zeppelin.interpreter.InterpreterRunner;
+import org.apache.zeppelin.interpreter.remote.RemoteInterpreterRunningProcess;
 import org.apache.zeppelin.interpreter.remote.SparkK8RemoteInterpreterManagedProcess;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -30,17 +34,19 @@ import java.util.Map;
  */
 public class SparkK8InterpreterLauncher extends SparkInterpreterLauncher {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(SparkK8InterpreterLauncher.class);
+
   public SparkK8InterpreterLauncher(ZeppelinConfiguration zConf) {
     super(zConf);
   }
 
   @Override
   public InterpreterClient launch(InterpreterLaunchContext context) {
-    LOGGER.info("Launching Interpreter: " + context.getInterpreterSettingGroup());
+    LOGGER.info("Launching Interpreter: " + context.getInterpreterGroupName());
     this.properties = context.getProperties();
     InterpreterOption option = context.getOption();
     InterpreterRunner runner = context.getRunner();
-    String groupName = context.getInterpreterSettingGroup();
+    String groupName = context.getInterpreterGroupName();
 
     int connectTimeout =
             zConf.getInt(ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETER_CONNECT_TIMEOUT);
@@ -52,13 +58,13 @@ public class SparkK8InterpreterLauncher extends SparkInterpreterLauncher {
     } else {
       // create new remote process
       String localRepoPath = zConf.getInterpreterLocalRepoPath() + "/"
-              + context.getInterpreterSettingId();
+              + context.getInterpreterGroupId();
       return new SparkK8RemoteInterpreterManagedProcess(
               runner != null ? runner.getPath() : zConf.getInterpreterRemoteRunnerPath(),
               zConf.getCallbackPortRange(),
               zConf.getInterpreterDir() + "/" + groupName, localRepoPath,
               buildEnvFromProperties(), connectTimeout, groupName,
-              context.getInterpreterSettingId());
+              context.getInterpreterGroupName());
     }
   }
 
