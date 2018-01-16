@@ -118,7 +118,7 @@ public class NotebookServer extends WebSocketServlet
 
   public static Message flows = new Message(OP.LIST_FLOWS).put("flows", new HashMap());
 
-  private static String flowsPath() { return ZeppelinConfiguration.create().getNotebookDir() + "/_lib/flows.json"; }
+  private static String flowsPath() { return ZeppelinConfiguration.create().getNotebookDir() + "/_conf/flows.json"; }
 
   static {
     try {
