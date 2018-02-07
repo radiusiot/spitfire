@@ -115,6 +115,7 @@ public class Message implements JsonSerializable {
 
     LIST_NOTES,                   // [c-s] ask list of note
     LIST_NOTES_SPITFIRE,                   // [c-s] ask list of note
+    SAVE_LAYOUT,
     RELOAD_NOTES_FROM_REPO,       // [c-s] reload notes from repo
 
     NOTES_INFO,                   // [s-c] list of note infos
@@ -185,7 +186,6 @@ public class Message implements JsonSerializable {
     PARAGRAPH_EXECUTED_BY_SPELL,  // [c-s] paragraph was executed by spell
     RUN_PARAGRAPH_USING_SPELL,    // [s-c] run paragraph using spell
     PARAS_INFO,                   // [s-c] paragraph runtime infos
-    SAVE_LAYOUT,
     SAVE_NOTE_FORMS,              // save note forms
     REMOVE_NOTE_FORMS             // remove note forms
   }
