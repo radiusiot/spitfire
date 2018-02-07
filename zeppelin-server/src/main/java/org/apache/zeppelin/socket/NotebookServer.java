@@ -19,6 +19,8 @@ package org.apache.zeppelin.socket;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -122,6 +124,18 @@ public class NotebookServer extends WebSocketServlet
    */
   final Queue<NotebookSocket> watcherSockets = Queues.newConcurrentLinkedQueue();
 
+  public static Map<String, Object> layout = new HashMap();
+  private static String notesLayoutPath() { return ZeppelinConfiguration.create().getNotebookDir() + "/_conf/layout.json"; }
+  static {
+    try {
+      byte[] bytes = Files.readAllBytes(Paths.get(notesLayoutPath()));
+      String f = new String(bytes);
+      layout = gson.fromJson(f, Map.class);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   private Notebook notebook() {
     return ZeppelinServer.notebook;
   }
@@ -213,6 +227,9 @@ public class NotebookServer extends WebSocketServlet
         case LIST_NOTES:
           unicastNoteList(conn, subject, userAndRoles);
           break;
+        case LIST_NOTES_SPITFIRE:
+           unicastNoteListSpitfire(conn, subject, userAndRoles);
+         break;
         case RELOAD_NOTES_FROM_REPO:
           broadcastReloadedNoteList(subject, userAndRoles);
           break;
@@ -349,6 +366,12 @@ public class NotebookServer extends WebSocketServlet
           break;
         case GET_INTERPRETER_SETTINGS:
           getInterpreterSettings(conn, subject);
+          break;
+        case SAVE_LAYOUT:
+          this.layout = messagereceived.data;
+          String l = gson.toJson(messagereceived.data);
+          Files.write(Paths.get(notesLayoutPath()), l.getBytes());
+          unicast(new Message(OP.SAVE_LAYOUT).put("layout", layout), conn);
           break;
         case WATCHER:
           switchConnectionToWatcher(conn, messagereceived);
@@ -592,7 +615,7 @@ public class NotebookServer extends WebSocketServlet
         new Message(OP.INTERPRETER_BINDINGS).put("interpreterBindings", settingList)));
   }
 
-  public List<Map<String, String>> generateNotesInfo(boolean needsReload,
+  public List<Map<String, Object>> generateNotesInfo(boolean needsReload,
       AuthenticationInfo subject, Set<String> userAndRoles) {
 
     Notebook notebook = notebook();
@@ -611,9 +634,9 @@ public class NotebookServer extends WebSocketServlet
     }
 
     List<Note> notes = notebook.getAllNotes(userAndRoles);
-    List<Map<String, String>> notesInfo = new LinkedList<>();
+    List<Map<String, Object>> notesInfo = new LinkedList<>();
     for (Note note : notes) {
-      Map<String, String> info = new HashMap<>();
+      Map<String, Object> info = new HashMap<>();
 
       if (hideHomeScreenNotebookFromList && note.getId().equals(homescreenNoteId)) {
         continue;
@@ -621,6 +644,7 @@ public class NotebookServer extends WebSocketServlet
 
       info.put("id", note.getId());
       info.put("name", note.getName());
+      info.put("p", note.getParagraphs().get(0));
       notesInfo.add(info);
     }
 
@@ -683,7 +707,7 @@ public class NotebookServer extends WebSocketServlet
       subject = new AuthenticationInfo(StringUtils.EMPTY);
     }
     //send first to requesting user
-    List<Map<String, String>> notesInfo = generateNotesInfo(false, subject, userAndRoles);
+    List<Map<String, Object>> notesInfo = generateNotesInfo(false, subject, userAndRoles);
     multicastToUser(subject.getUser(), new Message(OP.NOTES_INFO).put("notes", notesInfo));
     //to others afterwards
     broadcastNoteListExcept(notesInfo, subject);
@@ -691,8 +715,16 @@ public class NotebookServer extends WebSocketServlet
 
   public void unicastNoteList(NotebookSocket conn, AuthenticationInfo subject,
       HashSet<String> userAndRoles) {
-    List<Map<String, String>> notesInfo = generateNotesInfo(false, subject, userAndRoles);
+    List<Map<String, Object>> notesInfo = generateNotesInfo(false, subject, userAndRoles);
     unicast(new Message(OP.NOTES_INFO).put("notes", notesInfo), conn);
+  }
+
+  public void unicastNoteListSpitfire(NotebookSocket conn, AuthenticationInfo subject,
+                              HashSet<String> userAndRoles) {
+     List<Map<String, Object>> notesInfo = generateNotesInfo(false, subject, userAndRoles);
+     Message m = new Message(OP.NOTES_INFO).put("notes", notesInfo);
+     m.put("layout", layout);
+     unicast(m, conn);
   }
 
   public void broadcastReloadedNoteList(AuthenticationInfo subject, HashSet userAndRoles) {
@@ -701,13 +733,13 @@ public class NotebookServer extends WebSocketServlet
     }
 
     //reload and reply first to requesting user
-    List<Map<String, String>> notesInfo = generateNotesInfo(true, subject, userAndRoles);
+    List<Map<String, Object>> notesInfo = generateNotesInfo(true, subject, userAndRoles);
     multicastToUser(subject.getUser(), new Message(OP.NOTES_INFO).put("notes", notesInfo));
     //to others afterwards
     broadcastNoteListExcept(notesInfo, subject);
   }
 
-  private void broadcastNoteListExcept(List<Map<String, String>> notesInfo,
+  private void broadcastNoteListExcept(List<Map<String, Object>> notesInfo,
       AuthenticationInfo subject) {
     Set<String> userAndRoles;
     NotebookAuthorization authInfo = NotebookAuthorization.getInstance();
