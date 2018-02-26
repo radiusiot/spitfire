@@ -1850,6 +1850,7 @@ public class NotebookServer extends WebSocketServlet
       String title = (String) raw.get("title");
       Map<String, Object> params = (Map<String, Object>) raw.get("params");
       Map<String, Object> config = (Map<String, Object>) raw.get("config");
+//      Map<String, Input> forms = (Map<String, Input>) ((Map<String, Object>) raw.get("settings")).get("forms");
 
       Paragraph p1 = note.addNewParagraph(AuthenticationInfo.ANONYMOUS);
 /*
@@ -1858,6 +1859,7 @@ public class NotebookServer extends WebSocketServlet
 */
       Paragraph p2 = setParagraphUsingMessage2(note, raw, fromMessage, p1,
               paragraphId, text, title, params, config);
+
       persistAndExecuteSingleParagraph(conn, note, p2, false);
     }
   }
@@ -2035,7 +2037,8 @@ public class NotebookServer extends WebSocketServlet
     AuthenticationInfo subject =
             new AuthenticationInfo(fromMessage.principal, fromMessage.roles, fromMessage.ticket);
     p.setAuthenticationInfo(subject);
-    p.settings.setParams(params);
+    p.settings.setParams(new HashMap<String, Object>());
+    p.settings.setForms(new LinkedHashMap<String, Input>());
     p.setConfig(config);
     p.setId((String) raw.get("id"));
     p.setJobName((String) raw.get("jobName"));
